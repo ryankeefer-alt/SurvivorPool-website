@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>March Madness Knockout Pool 2025</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Karla:wght@300;400;500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #080808;
+      --surface: #111111;
+      --raised:  #1a1a1a;
+      --float:   #222222;
+      --border:  rgba(255,255,255,0.08);
+      --accent:  #F4631F;
+      --gold:    #FFB800;
+      --cream:   #F2E8D9;
+      --text:    #F2E8D9;
+      --muted:   #8a7a6a;
+      --dim:     #4a3a2a;
+      --success: #4ade80;
+      --danger:  #f87171;
+      --warn:    #FFB800;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Karla', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .anton { font-family: 'Anton', sans-serif; letter-spacing: 0.02em; }
+    .mono { font-family: 'Courier Prime', monospace; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes bounce-ball {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      30%       { transform: translateY(-22px) rotate(-15deg); }
+      60%       { transform: translateY(0) rotate(5deg); }
+      80%       { transform: translateY(-8px) rotate(-5deg); }
+    }
+    @keyframes spin-ball {
+      0%   { transform: rotate(0deg) scale(1); }
+      25%  { transform: rotate(90deg) scale(1.06); }
+      50%  { transform: rotate(180deg) scale(1); }
+      75%  { transform: rotate(270deg) scale(1.06); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    @keyframes glow-pulse {
+      0%, 100% { opacity: .6; }
+      50%       { opacity: 1; }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+    .anim-up   { animation: fadeUp .45s cubic-bezier(.22,1,.36,1) both; }
+    .anim-up-1 { animation-delay:  60ms; }
+    .anim-up-2 { animation-delay: 120ms; }
+    .anim-up-3 { animation-delay: 180ms; }
+    .anim-up-4 { animation-delay: 240ms; }
+    .anim-up-5 { animation-delay: 300ms; }
+    .anim-up-6 { animation-delay: 360ms; }
+    .anim-up-7 { animation-delay: 420ms; }
+
+    /* ── Court texture ── */
+    .court-texture {
+      background-color: var(--bg);
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(255,255,255,.03) 59px, rgba(255,255,255,.03) 60px),
+        repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(255,255,255,.03) 59px, rgba(255,255,255,.03) 60px);
+    }
+
+    /* ── Header ── */
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(8,8,8,.95);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .header-flame {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 70% 200% at 80% 50%, rgba(244,99,31,.14) 0%, transparent 65%);
+    }
+
+    /* ── Nav ── */
+    .nav-tab {
+      display:flex; align-items:center; gap:7px;
+      padding: 14px 20px; font-size: 13px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); cursor: pointer; white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .nav-tab:hover { color: var(--cream); }
+    .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 18px 22px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title {
+      font-family: 'Anton', sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cream);
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 4px;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .badge-alive   { background: rgba(74,222,128,.12); color: var(--success); border: 1px solid rgba(74,222,128,.25); }
+    .badge-out     { background: rgba(248,113,113,.1); color: var(--danger);  border: 1px solid rgba(248,113,113,.2); }
+    .badge-buyback { background: rgba(255,184,0,.12);  color: var(--gold);    border: 1px solid rgba(255,184,0,.25); }
+    .badge-win     { background: rgba(74,222,128,.12); color: var(--success); border: 1px solid rgba(74,222,128,.25); }
+    .badge-loss    { background: rgba(248,113,113,.1); color: var(--danger);  border: 1px solid rgba(248,113,113,.2); }
+    .badge-pending { background: rgba(255,184,0,.1);  color: var(--gold);    border: 1px solid rgba(255,184,0,.2);  }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 8px; border: none; cursor: pointer;
+      font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700;
+      letter-spacing: 0.04em;
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+    }
+    .btn:hover   { transform: translateY(-1px); }
+    .btn:active  { transform: translateY(0); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(244,99,31,.4), 0 1px 3px rgba(0,0,0,.5);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 28px rgba(244,99,31,.55), 0 2px 6px rgba(0,0,0,.5);
+    }
+    .btn-gold {
+      background: var(--gold);
+      color: #111;
+      box-shadow: 0 4px 20px rgba(255,184,0,.35), 0 1px 3px rgba(0,0,0,.5);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+
+    /* ── Game rows ── */
+    .game-row {
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    .game-row:last-child { border-bottom: none; }
+    .game-row:hover { background: rgba(255,255,255,.025); }
+
+    /* ── Player rows ── */
+    .player-row {
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 14px;
+      transition: background .15s;
+    }
+    .player-row:last-child { border-bottom: none; }
+    .player-row:hover { background: rgba(255,255,255,.025); }
+
+    /* ── Form ── */
+    .form-label {
+      display: block;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .form-input, .form-select {
+      width: 100%; padding: 11px 14px;
+      background: var(--raised); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text);
+      font-family: 'Karla', sans-serif; font-size: 14px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(244,99,31,.15);
+    }
+    .form-input::placeholder { color: var(--muted); }
+    .form-select option { background: var(--raised); }
+
+    /* ── Admin table ── */
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th {
+      padding: 10px 14px; text-align: left;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); border-bottom: 1px solid var(--border);
+    }
+    .admin-table td {
+      padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.04);
+      font-size: 13.5px; vertical-align: middle;
+    }
+    .admin-table tr:hover td { background: rgba(255,255,255,.025); }
+
+    /* ── Venmo banner ── */
+    .venmo-bar {
+      background: linear-gradient(135deg, #008CFF 0%, #00B3FF 100%);
+      padding: 3px 0; text-align: center;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+      color: #fff;
+    }
+
+    /* ── Scoreboard ── */
+    .score-pill {
+      font-family: 'Courier Prime', monospace;
+      font-size: 13px; font-weight: 700;
+      min-width: 26px; text-align: center;
+      padding: 2px 8px;
+      background: var(--raised); border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Rules ── */
+    .rule-card {
+      background: var(--raised);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 14px 18px;
+    }
+    .rule-card.gold { border-left-color: var(--gold); }
+
+    /* ── Toggle ── */
+    .toggle-pill {
+      display: inline-flex;
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 3px;
+    }
+    .toggle-opt {
+      padding: 6px 16px; border-radius: 100px; cursor: pointer;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--muted); transition: all .2s;
+    }
+    .toggle-opt.active { background: var(--accent); color: #fff; }
+
+    /* ── Tabs ── */
+    .subtab {
+      padding: 8px 16px; border-radius: 6px; cursor: pointer;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--muted); transition: all .2s;
+    }
+    .subtab.active { background: var(--raised); color: var(--text); }
+    .subtab:hover:not(.active) { color: var(--cream); }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); }
+
+    /* ── Pool stat cards ── */
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    }
+    .stat-card.orange::before { background: var(--accent); }
+    .stat-card.gold::before   { background: var(--gold); }
+    .stat-card.green::before  { background: var(--success); }
+    .stat-card.red::before    { background: #ef4444; }
+    .stat-card.blue::before   { background: #3b82f6; }
+    .stat-card.white::before  { background: #e5e7eb; }
+  </style>
+</head>
+<body class="court-texture">
+
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useMemo, useCallback } = React;
+
+/* ────────────────────────────────
+   SVG Basketball Component
+──────────────────────────────── */
+const Basketball = ({ size = 60, bounce = false, spin = false, className = '', glow = false }) => (
+  <div
+    className={className}
+    style={{
+      width: size, height: size, flexShrink: 0,
+      animation: spin
+        ? 'spin-ball 2.4s cubic-bezier(.4,0,.6,1) infinite'
+        : bounce ? 'bounce-ball 1.8s cubic-bezier(.36,.07,.19,.97) infinite' : 'none',
+      filter: glow ? `drop-shadow(0 0 ${size * 0.18}px rgba(244,99,31,.75)) drop-shadow(0 0 ${size * 0.35}px rgba(244,99,31,.3))` : 'none',
+    }}
+  >
+    <svg viewBox="0 0 100 100" width={size} height={size}>
+      <defs>
+        <radialGradient id={`bg${size}`} cx="38%" cy="32%">
+          <stop offset="0%"   stopColor="#FF8C42" />
+          <stop offset="45%"  stopColor="#F4631F" />
+          <stop offset="100%" stopColor="#B33A00" />
+        </radialGradient>
+        <radialGradient id={`shine${size}`} cx="32%" cy="28%">
+          <stop offset="0%"   stopColor="rgba(255,255,255,.35)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </radialGradient>
+        <clipPath id={`clip${size}`}>
+          <circle cx="50" cy="50" r="47" />
+        </clipPath>
+      </defs>
+      <circle cx="50" cy="50" r="47" fill={`url(#bg${size})`} />
+      <g clipPath={`url(#clip${size})`} stroke="#7A2400" strokeWidth="2" fill="none">
+        <line x1="50" y1="3"  x2="50" y2="97" />
+        <line x1="3"  y1="50" x2="97" y2="50" />
+        <path d="M20 14 Q50 50 20 86" />
+        <path d="M80 14 Q50 50 80 86" />
+      </g>
+      <circle cx="50" cy="50" r="47" fill={`url(#shine${size})`} />
+      <circle cx="50" cy="50" r="47" stroke="rgba(0,0,0,.25)" strokeWidth="1.5" fill="none" />
+    </svg>
+  </div>
+);
+
+/* ────────────────────────────────
+   Avatar Component
+──────────────────────────────── */
+const Avatar = ({ name, size = 38 }) => {
+  const parts = (name || '?').trim().split(/\s+/);
+  const initials = parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : parts[0][0].toUpperCase();
+  const colors = [
+    ['#F4631F','#B33A00'],['#FFB800','#CC8800'],['#FF6B6B','#C0392B'],
+    ['#4ECDC4','#1A7A75'],['#95E1D3','#2D8C7A'],['#F38181','#C0392B'],
+    ['#A8E6CF','#2E7D5B'],['#FFD93D','#CC9900'],
+  ];
+  const idx = name ? name.charCodeAt(0) % colors.length : 0;
+  const [c1, c2] = colors[idx];
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: `radial-gradient(circle at 35% 35%, ${c1}, ${c2})`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0,
+      boxShadow: `0 2px 8px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.15)`,
+      fontFamily: "'Anton', sans-serif",
+      fontSize: size * 0.36 + 'px',
+      color: '#fff',
+      letterSpacing: '0.02em',
+    }}>
+      {initials}
+    </div>
+  );
+};
+
+/* ────────────────────────────────
+   DATA
+──────────────────────────────── */
+const DAY_ORDER = [
+  'thursday_r1','friday_r1','saturday_r2','sunday_r2',
+  'thursday_s16','friday_s16','saturday_e8','sunday_e8',
+  'saturday_ff','monday_champ'
+];
+const DAY_LABELS = {
+  thursday_r1:'Thu R1', friday_r1:'Fri R1', saturday_r2:'Sat R2', sunday_r2:'Sun R2',
+  thursday_s16:'Thu S16', friday_s16:'Fri S16', saturday_e8:'Sat E8', sunday_e8:'Sun E8',
+  saturday_ff:'Sat FF', monday_champ:'Mon Champ'
+};
+const DAY_FULL = {
+  thursday_r1:'Thursday — Round of 64', friday_r1:'Friday — Round of 64',
+  saturday_r2:'Saturday — Round of 32', sunday_r2:'Sunday — Round of 32',
+  thursday_s16:'Thursday — Sweet 16', friday_s16:'Friday — Sweet 16',
+  saturday_e8:'Saturday — Elite 8', sunday_e8:'Sunday — Elite 8',
+  saturday_ff:'Saturday — Final Four', monday_champ:'Monday — Championship'
+};
+
+const TEAMS = [
+  'Alabama','Arizona','Arkansas','Auburn','Baylor','Connecticut','Creighton','Duke',
+  'Florida','Florida Atlantic','Gonzaga','Houston','Illinois','Iowa State','Kansas',
+  'Kentucky','Marquette','Michigan State','Missouri','Notre Dame','Ohio State',
+  'Penn State','Purdue','San Diego State','Tennessee','Texas','Texas A&M',
+  'UCLA','USC','Virginia','Xavier','Xavier'
+];
+
+const RULES_DATA = [
+  {
+    id:'r1', day:`Thursday R1`, color:'orange',
+    heading:`Two Picks Required`,
+    body:`Pick TWO winners on Thursday. Both must win outright. If either loses, you're eliminated — but you can buy back in for $25. If you buy back after Thursday, you must pick FOUR winners on Friday.`
+  },
+  {
+    id:'r2', day:`Friday R1`, color:'orange',
+    heading:`Two More Picks`,
+    body:`If you survived Thursday, pick TWO more winners on Friday. If you lost Thursday and bought back in, you need FOUR winners Friday. Lose Friday and you can buy back in for Saturday — but you'll need THREE that day.`
+  },
+  {
+    id:'r3', day:`Saturday R2`, color:'gold',
+    heading:`One Pick (or Three on Buyback)`,
+    body:`If you nailed Friday, pick just ONE winner Saturday. If you're buying back in after a Friday loss, pick THREE Saturday and go 3-for-3. Max buybacks is three and no buybacks after Sunday.`
+  },
+  {
+    id:'r4', day:`Sunday R2`, color:'gold',
+    heading:`One Pick (or Three on Buyback)`,
+    body:`Same deal as Saturday. Survived Saturday? Pick one. Buying back in after a Saturday loss? Pick three — and go 3-for-3 to stay alive. This is your last chance to buy back in.`
+  },
+  {
+    id:'r5', day:`Sweet 16 onward`, color:'orange',
+    heading:`One Pick Per Day`,
+    body:`From here on out you pick ONE winner per day. No more buybacks. Last person standing takes the pot. If multiple people survive, they can split or keep playing.`
+  },
+  {
+    id:'r6', day:`All Rounds`, color:'gold',
+    heading:`No Team Reuse`,
+    body:`You cannot pick the same team twice — ever. Even if you buy back in, those previous picks are locked out. If you run out of eligible teams to pick, you automatically advance but lose that day (you still need to be beaten by someone who makes a successful pick).`
+  },
+];
+
+const INITIAL_PLAYERS = [
+  {
+    id:1, name:'Ryan', status:'alive', buybacks:0, needsBuyback:false, totalSpent:25,
+    picks:{thursday_r1:['Duke','Gonzaga'], friday_r1:['Houston','Kansas'], saturday_r2:['Connecticut'], sunday_r2:['Alabama'], thursday_s16:['Purdue']},
+    results:{thursday_r1:'win', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', thursday_s16:'win'}
+  },
+  {
+    id:2, name:'Marcus', status:'alive', buybacks:0, needsBuyback:false, totalSpent:25,
+    picks:{thursday_r1:['Baylor','Kentucky'], friday_r1:['Duke','Tennessee'], saturday_r2:['Houston'], sunday_r2:['Connecticut'], friday_s16:['Alabama']},
+    results:{thursday_r1:'win', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', friday_s16:'pending'}
+  },
+  {
+    id:3, name:'Priya', status:'alive', buybacks:1, needsBuyback:false, totalSpent:50,
+    picks:{thursday_r1:['Texas','UCLA'], friday_r1:['Baylor','Purdue','Kansas','Michigan State'], saturday_r2:['Duke'], sunday_r2:['Gonzaga'], thursday_s16:['Texas']},
+    results:{thursday_r1:'loss', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', thursday_s16:'pending'}
+  },
+  {
+    id:4, name:'Dante', status:'alive', buybacks:1, needsBuyback:false, totalSpent:50,
+    picks:{thursday_r1:['Auburn','Creighton'], friday_r1:['Houston','Alabama','Florida','Iowa State'], saturday_r2:['Tennessee'], sunday_r2:['Duke'], friday_s16:['Connecticut']},
+    results:{thursday_r1:'loss', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', friday_s16:'pending'}
+  },
+  {
+    id:5, name:'Sofia', status:'alive', buybacks:0, needsBuyback:false, totalSpent:25,
+    picks:{thursday_r1:['Connecticut','Purdue'], friday_r1:['Alabama','Gonzaga'], saturday_r2:['Kansas'], sunday_r2:['Tennessee'], thursday_s16:['Houston']},
+    results:{thursday_r1:'win', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', thursday_s16:'pending'}
+  },
+  {
+    id:6, name:'Jake', status:'eliminated', buybacks:2, needsBuyback:false, totalSpent:75,
+    picks:{thursday_r1:['Florida','Missouri'], friday_r1:['Duke','Texas','Penn State','Xavier'], saturday_r2:['Alabama','Baylor','Creighton'], sunday_r2:['Houston']},
+    results:{thursday_r1:'loss', friday_r1:'win', saturday_r2:'loss', sunday_r2:'loss'}
+  },
+  {
+    id:7, name:'Layla', status:'eliminated', buybacks:1, needsBuyback:false, totalSpent:50,
+    picks:{thursday_r1:['Illinois','Ohio State'], friday_r1:['Connecticut','Arkansas','Florida Atlantic','Virginia'], saturday_r2:['Purdue']},
+    results:{thursday_r1:'loss', friday_r1:'win', saturday_r2:'loss'}
+  },
+  {
+    id:8, name:'Omar', status:'eliminated', buybacks:0, needsBuyback:false, totalSpent:25,
+    picks:{thursday_r1:['Kentucky','Marquette'], friday_r1:['Baylor','Tennessee']},
+    results:{thursday_r1:'win', friday_r1:'loss'}
+  },
+];
+
+const GAMES_DATA = {
+  thursday_r1: [
+    {id:'g1',  home:'Duke',       away:'Vermont',    homeScore:85, awayScore:61, final:true, winner:'Duke'},
+    {id:'g2',  home:'Gonzaga',    away:'Grand Canyon',homeScore:79,awayScore:62, final:true, winner:'Gonzaga'},
+    {id:'g3',  home:'Houston',    away:'Longwood',   homeScore:93, awayScore:57, final:true, winner:'Houston'},
+    {id:'g4',  home:'Kansas',     away:'Howard',     homeScore:96, awayScore:68, final:true, winner:'Kansas'},
+    {id:'g5',  home:'Connecticut',away:'Iona',       homeScore:87, awayScore:63, final:true, winner:'Connecticut'},
+    {id:'g6',  home:'Purdue',     away:'Texas Southern',homeScore:99,awayScore:75,final:true,winner:'Purdue'},
+    {id:'g7',  home:'Alabama',    away:'Texas A&M CC',homeScore:96,awayScore:75, final:true, winner:'Alabama'},
+    {id:'g8',  home:'Baylor',     away:'UC Santa Barbara',homeScore:74,awayScore:61,final:true,winner:'Baylor'},
+    {id:'g9',  home:'Kentucky',   away:'Providence', homeScore:61, awayScore:53, final:true, winner:'Kentucky'},
+    {id:'g10', home:'Marquette',  away:'Vermont',    homeScore:78, awayScore:61, final:true, winner:'Marquette'},
+    {id:'g11', home:'Texas',      away:'Colgate',    homeScore:71, awayScore:63, final:true, winner:'Texas'},
+    {id:'g12', home:'UCLA',       away:'NC Central', homeScore:86, awayScore:52, final:true, winner:'UCLA'},
+    {id:'g13', home:'Auburn',     away:'Iowa',       homeScore:83, awayScore:75, final:true, winner:'Auburn'},
+    {id:'g14', home:'Creighton',  away:'NC State',   homeScore:72, awayScore:69, final:true, winner:'Creighton'},
+    {id:'g15', home:'Tennessee',  away:'Louisiana',  homeScore:58, awayScore:55, final:true, winner:'Tennessee'},
+    {id:'g16', home:'Illinois',   away:'Arkansas',   homeScore:69, awayScore:73, final:false, winner:'Arkansas'},
+  ],
+  friday_r1: [
+    {id:'g17', home:'Michigan State',away:'USC',    homeScore:72, awayScore:62, final:true, winner:'Michigan State'},
+    {id:'g18', home:'Arizona',    away:'Princeton', homeScore:59, awayScore:55, final:true, winner:'Arizona'},
+    {id:'g19', home:'Purdue',     away:'Memphis',   homeScore:99, awayScore:88, final:true, winner:'Purdue'},
+    {id:'g20', home:'Duke',       away:'Oral Roberts',homeScore:74,awayScore:65,final:true, winner:'Duke'},
+    {id:'g21', home:'Houston',    away:'Auburn',    homeScore:81, awayScore:64, final:true, winner:'Houston'},
+    {id:'g22', home:'Alabama',    away:'Maryland',  homeScore:73, awayScore:51, final:true, winner:'Alabama'},
+    {id:'g23', home:'Florida',    away:'Colorado',  homeScore:75, awayScore:58, final:true, winner:'Florida'},
+    {id:'g24', home:'Iowa State', away:'Pittsburgh',homeScore:59, awayScore:41, final:true, winner:'Iowa State'},
+    {id:'g25', home:'San Diego State',away:'Charleston',homeScore:63,awayScore:57,final:true,winner:'San Diego State'},
+    {id:'g26', home:'Baylor',     away:'UC Davis',  homeScore:85, awayScore:76, final:true, winner:'Baylor'},
+    {id:'g27', home:'Tennessee',  away:'Duke Blue Devils',homeScore:71,awayScore:68,final:false,winner:null},
+    {id:'g28', home:'Connecticut',away:'Saint Mary',homeScore:null,awayScore:null,final:false,winner:null},
+  ],
+  saturday_r2: [
+    {id:'g29', home:'Connecticut',away:'Arkansas',  homeScore:82, awayScore:68, final:true,  winner:'Connecticut'},
+    {id:'g30', home:'Duke',       away:'Tennessee', homeScore:69, awayScore:62, final:true,  winner:'Duke'},
+    {id:'g31', home:'Houston',    away:'Iowa State',homeScore:77, awayScore:71, final:true,  winner:'Houston'},
+    {id:'g32', home:'Alabama',    away:'Michigan State',homeScore:71,awayScore:51,final:true,winner:'Alabama'},
+    {id:'g33', home:'Kansas',     away:'Arkansas',  homeScore:74, awayScore:68, final:true,  winner:'Kansas'},
+    {id:'g34', home:'Purdue',     away:'Florida Atlantic',homeScore:79,awayScore:67,final:true,winner:'Purdue'},
+    {id:'g35', home:'Baylor',     away:'Creighton', homeScore:70, awayScore:73, final:true,  winner:'Creighton'},
+    {id:'g36', home:'UCLA',       away:'Illinois',  homeScore:68, awayScore:55, final:true,  winner:'UCLA'},
+  ],
+  sunday_r2: [
+    {id:'g37', home:'Gonzaga',    away:'UCLA',      homeScore:79, awayScore:76, final:true,  winner:'Gonzaga'},
+    {id:'g38', home:'Tennessee',  away:'Duke',      homeScore:65, awayScore:62, final:true,  winner:'Tennessee'},
+    {id:'g39', home:'Texas',      away:'Penn State',homeScore:71, awayScore:66, final:true,  winner:'Texas'},
+    {id:'g40', home:'Purdue',     away:'Memphis',   homeScore:91, awayScore:80, final:true,  winner:'Purdue'},
+    {id:'g41', home:'Kansas',     away:'Arkansas',  homeScore:72, awayScore:68, final:true,  winner:'Kansas'},
+  ],
+  thursday_s16: [
+    {id:'g42', home:'Purdue',     away:'Duke',      homeScore:72, awayScore:66, final:true,  winner:'Purdue'},
+    {id:'g43', home:'Texas',      away:'Alabama',   homeScore:null,awayScore:null,final:false,winner:null},
+    {id:'g44', home:'Houston',    away:'Arizona',   homeScore:null,awayScore:null,final:false,winner:null},
+  ],
+  friday_s16: [
+    {id:'g45', home:'Connecticut',away:'Gonzaga',   homeScore:null,awayScore:null,final:false,winner:null},
+    {id:'g46', home:'Alabama',    away:'Tennessee', homeScore:null,awayScore:null,final:false,winner:null},
+  ],
+};
+
+const CURRENT_DAY = 'friday_s16';
+const BUYBACK_DAYS = ['friday_r1', 'saturday_r2', 'sunday_r2'];
+const buybackOpen = BUYBACK_DAYS.includes(CURRENT_DAY);
+
+const getRequiredPicks = (player, day) => {
+  if (!player.needsBuyback) {
+    if (day === 'thursday_r1' || day === 'friday_r1') return 2;
+    return 1;
+  }
+  if (day === 'friday_r1') return 4;
+  return 3;
+};
+
+/* ────────────────────────────────
+   MAIN APP
+──────────────────────────────── */
+function App() {
+  const [activeTab, setActiveTab]   = useState('standings');
+  const [isAdmin,   setIsAdmin]     = useState(false);
+  const [players,   setPlayers]     = useState(INITIAL_PLAYERS);
+  const [adminTab,  setAdminTab]    = useState('players');
+  const [editingPlayer, setEditingPlayer] = useState(null);
+
+  // ── Submit Picks State ──
+  const [pickerName,      setPickerName]      = useState('');
+  const [selectedDay,     setSelectedDay]     = useState(CURRENT_DAY);
+  const [teamPicks,       setTeamPicks]       = useState(['']);
+  const [submitted,       setSubmitted]       = useState(false);
+  const [submitErr,       setSubmitErr]       = useState('');
+  const [buybackPlayerId, setBuybackPlayerId] = useState(null);
+
+  const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
+  const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
+
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    setSubmitted(false);
+    setSubmitErr('');
+    if (tab !== 'picks') setBuybackPlayerId(null);
+  }, []);
+
+  const handleBuyBack = (player) => {
+    setBuybackPlayerId(player.id);
+    setPickerName(player.name);
+    setSelectedDay(CURRENT_DAY);
+    setTeamPicks(['']);
+    setSubmitted(false);
+    setSubmitErr('');
+    setActiveTab('picks');
+  };
+
+  const handlePickCountChange = (idx, val) => {
+    const picks = [...teamPicks];
+    picks[idx] = val;
+    setTeamPicks(picks);
+  };
+  const addPickSlot = () => setTeamPicks([...teamPicks, '']);
+  const removePickSlot = (idx) => setTeamPicks(teamPicks.filter((_,i) => i !== idx));
+
+  const handleSubmitPicks = () => {
+    setSubmitErr('');
+    if (!pickerName.trim()) { setSubmitErr('Please enter your name.'); return; }
+    const filled = teamPicks.filter(t => t.trim());
+    if (filled.length === 0) { setSubmitErr('Please select at least one team.'); return; }
+    const dupes = filled.filter((t, i) => filled.indexOf(t) !== i);
+    if (dupes.length > 0) { setSubmitErr(`Duplicate pick: ${dupes[0]}`); return; }
+    if (buybackPlayerId !== null) {
+      setPlayers(prev => prev.map(p =>
+        p.id === buybackPlayerId
+          ? { ...p, status: 'alive', buybacks: p.buybacks + 1, totalSpent: p.totalSpent + 25, needsBuyback: false }
+          : p
+      ));
+    }
+    setSubmitted(true);
+  };
+
+  const handleSavePlayer = (updated) => {
+    setPlayers(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setEditingPlayer(null);
+  };
+
+  const TABS = [
+    {id:'standings', label:'Standings'},
+    {id:'scores',    label:'Scores'},
+    {id:'picks',     label:'Submit Picks'},
+    {id:'rules',     label:'Rules'},
+  ];
+  if (isAdmin) TABS.push({id:'admin', label:'Admin'});
+
+  const totalPot = players.reduce((s, p) => s + p.totalSpent, 0);
+
+  return (
+    <div style={{minHeight:'100vh', background:'var(--bg)'}}>
+
+      {/* Venmo Bar */}
+      <div className="venmo-bar">
+        <a href="https://www.venmo.com/Ryan-Keefer-2" target="_blank" rel="noopener noreferrer"
+           style={{color:'#fff', textDecoration:'none'}}>
+          Pay Entry Fee via Venmo @Ryan-Keefer-2
+        </a>
+      </div>
+
+      {/* Header */}
+      <header className="site-header">
+        <div className="header-flame" />
+        <div style={{maxWidth:1100, margin:'0 auto', padding:'0 16px', position:'relative'}}>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 0 0'}}>
+            <div style={{display:'flex', alignItems:'center', gap:16}}>
+              <Basketball size={44} spin={true} glow={true} />
+              <div>
+                <div className="anton" style={{fontSize:22, color:'var(--cream)', lineHeight:1.1, letterSpacing:'0.04em'}}>
+                  MARCH MADNESS
+                </div>
+                <div className="mono" style={{fontSize:11, color:'var(--accent)', letterSpacing:'0.12em', marginTop:1}}>
+                  KNOCKOUT POOL — 2025
+                </div>
+              </div>
+            </div>
+            <div style={{display:'flex', alignItems:'center', gap:12}}>
+              <div style={{textAlign:'right', marginRight:4}}>
+                <div className="mono" style={{fontSize:26, color:'var(--gold)', fontWeight:700, lineHeight:1}}>
+                  ${totalPot.toLocaleString()}
+                </div>
+                <div style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:4}}>Total Pot</div>
+              </div>
+              <div className="toggle-pill">
+                <div className={`toggle-opt ${!isAdmin ? 'active' : ''}`} onClick={() => setIsAdmin(false)}>Player</div>
+                <div className={`toggle-opt ${isAdmin  ? 'active' : ''}`} onClick={() => { setIsAdmin(true); setActiveTab('admin'); }}>Admin</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Nav */}
+          <div style={{display:'flex', gap:0, overflowX:'auto', marginTop:4}}>
+            {TABS.map(tab => (
+              <div key={tab.id} className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+                   onClick={() => handleTabChange(tab.id)}>
+                {tab.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main style={{maxWidth:1100, margin:'0 auto', padding:'28px 16px 60px'}}>
+
+        {/* ── STANDINGS ── */}
+        {activeTab === 'standings' && (
+          <div className="anim-up">
+            {/* Stats Row */}
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px,1fr))', gap:14, marginBottom:28}}>
+              <div className="stat-card green anim-up anim-up-1">
+                <div className="mono" style={{fontSize:28, fontWeight:700, color:'var(--success)', lineHeight:1}}>{alivePlayers.length}</div>
+                <div style={{fontSize:11, color:'var(--muted)', marginTop:6, letterSpacing:'0.08em', textTransform:'uppercase'}}>Still Alive</div>
+              </div>
+              <div className="stat-card red anim-up anim-up-2">
+                <div className="mono" style={{fontSize:28, fontWeight:700, color:'#f87171', lineHeight:1}}>{eliminatedPlayers.length}</div>
+                <div style={{fontSize:11, color:'var(--muted)', marginTop:6, letterSpacing:'0.08em', textTransform:'uppercase'}}>Eliminated</div>
+              </div>
+              <div className="stat-card white anim-up anim-up-3">
+                <div className="mono" style={{fontSize:28, fontWeight:700, color:'#e5e7eb', lineHeight:1}}>{DAY_LABELS[CURRENT_DAY]}</div>
+                <div style={{fontSize:11, color:'var(--muted)', marginTop:6, letterSpacing:'0.08em', textTransform:'uppercase'}}>Current Round</div>
+              </div>
+            </div>
+
+            {/* Alive Players */}
+            <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
+              <div className="card-header">
+                <div className="card-title" style={{color:'var(--success)'}}>Still Alive</div>
+                <span className="badge badge-alive">{alivePlayers.length} alive</span>
+              </div>
+              {[...alivePlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
+                <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</div>
+                    <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>
+                      {p.buybacks > 0 ? `${p.buybacks} buyback${p.buybacks > 1 ? 's' : ''}` : 'No buybacks'} · ${p.totalSpent} in
+                    </div>
+                  </div>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
+                    {DAY_ORDER.slice(0,7).map(day => {
+                      const result = p.results[day];
+                      if (!result) return null;
+                      return (
+                        <span key={day} className={`badge ${result === 'win' ? 'badge-win' : result === 'loss' ? 'badge-loss' : 'badge-pending'}`}
+                              style={{fontSize:10}}>
+                          {DAY_LABELS[day]} {result === 'win' ? '✓' : result === 'loss' ? '✗' : '—'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Eliminated Players */}
+            {eliminatedPlayers.length > 0 && (
+              <div className="card anim-up anim-up-5">
+                <div className="card-header">
+                  <div className="card-title" style={{color:'var(--danger)'}}>Eliminated</div>
+                  <span className="badge badge-out">{eliminatedPlayers.length} out</span>
+                </div>
+                {[...eliminatedPlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
+                  <div key={p.id} className="player-row" style={{opacity: buybackOpen && p.buybacks < 3 ? 1 : .7}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:600, color: buybackOpen && p.buybacks < 3 ? 'var(--cream)' : 'var(--muted)', textDecoration: buybackOpen && p.buybacks < 3 ? 'none' : 'line-through', fontSize:15}}>{p.name}</div>
+                      <div style={{fontSize:12, color:'var(--dim)', marginTop:1}}>
+                        {p.buybacks} buyback{p.buybacks !== 1 ? 's' : ''} · ${p.totalSpent} spent
+                      </div>
+                    </div>
+                    {buybackOpen && p.buybacks < 3 && (
+                      <button className="btn btn-gold" style={{padding:'7px 18px', fontSize:12, flexShrink:0, marginLeft:8}}
+                              onClick={() => handleBuyBack(p)}>
+                        Buy Back In — $25
+                      </button>
+                    )}
+                    <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
+                      {DAY_ORDER.map(day => {
+                        const result = p.results[day];
+                        if (!result) return null;
+                        return (
+                          <span key={day} className={`badge ${result === 'win' ? 'badge-win' : 'badge-loss'}`}
+                                style={{fontSize:10}}>
+                            {DAY_LABELS[day]} {result === 'win' ? '✓' : '✗'}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── SCORES ── */}
+        {activeTab === 'scores' && (
+          <div className="anim-up">
+            {Object.entries(GAMES_DATA).map(([day, games]) => (
+              <div key={day} style={{marginBottom:24}}>
+                <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
+                  <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>{DAY_FULL[day]}</div>
+                  {day === CURRENT_DAY && (
+                    <span className="badge badge-pending" style={{animation:'glow-pulse 1.5s ease-in-out infinite'}}>Live</span>
+                  )}
+                </div>
+                <div className="card">
+                  {games.map((game, idx) => (
+                    <div key={game.id} className="game-row">
+                      <div style={{display:'flex', alignItems:'center', gap:10}}>
+                        <div style={{flex:1}}>
+                          <div style={{display:'flex', alignItems:'center', gap:8}}>
+                            <span style={{
+                              fontWeight: game.winner === game.home ? 700 : 400,
+                              color: game.winner === game.home ? 'var(--cream)' : 'var(--muted)',
+                              fontSize: 14,
+                            }}>{game.home}</span>
+                            {game.final && game.winner === game.home && (
+                              <span className="badge badge-win" style={{fontSize:9}}>W</span>
+                            )}
+                          </div>
+                          <div style={{display:'flex', alignItems:'center', gap:8, marginTop:4}}>
+                            <span style={{
+                              fontWeight: game.winner === game.away ? 700 : 400,
+                              color: game.winner === game.away ? 'var(--cream)' : 'var(--muted)',
+                              fontSize: 14,
+                            }}>{game.away}</span>
+                            {game.final && game.winner === game.away && (
+                              <span className="badge badge-win" style={{fontSize:9}}>W</span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{textAlign:'right', minWidth:80}}>
+                          {game.final ? (
+                            <div>
+                              <div className="mono" style={{fontSize:15, fontWeight:700, color:'var(--text)'}}>{game.homeScore}</div>
+                              <div className="mono" style={{fontSize:15, fontWeight:700, color:'var(--text)', marginTop:4}}>{game.awayScore}</div>
+                            </div>
+                          ) : (
+                            <span className="badge badge-pending" style={{fontSize:10}}>
+                              {game.homeScore !== null ? `${game.homeScore}-${game.awayScore}` : 'TBD'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── SUBMIT PICKS ── */}
+        {activeTab === 'picks' && (
+          <div className="anim-up" style={{maxWidth:560}}>
+            {submitted ? (
+              <div className="card" style={{padding:'40px 32px', textAlign:'center'}}>
+                <Basketball size={72} bounce={true} glow={true} className="" />
+                <div className="anton" style={{fontSize:28, color: buybackPlayerId ? 'var(--gold)' : 'var(--success)', marginTop:20, letterSpacing:'0.04em'}}>
+                  {buybackPlayerId ? `YOU'RE BACK IN!` : `PICKS LOCKED IN`}
+                </div>
+                <div style={{color:'var(--muted)', marginTop:8}}>
+                  {pickerName} — {DAY_LABELS[selectedDay]}
+                </div>
+                {buybackPlayerId && (
+                  <div style={{fontSize:13, color:'var(--gold)', marginTop:6}}>
+                    Buyback confirmed · $25 added to pot
+                  </div>
+                )}
+                <div style={{marginTop:16, display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center'}}>
+                  {teamPicks.filter(t=>t).map(t => (
+                    <span key={t} className="badge badge-pending" style={{fontSize:13, padding:'5px 14px'}}>{t}</span>
+                  ))}
+                </div>
+                <div style={{display:'flex', gap:10, marginTop:24, justifyContent:'center'}}>
+                  <button className="btn btn-ghost"
+                          onClick={() => { setSubmitted(false); setTeamPicks(['']); setPickerName(''); setBuybackPlayerId(null); }}>
+                    Submit Another
+                  </button>
+                  <button className="btn btn-primary" onClick={() => { handleTabChange('standings'); }}>
+                    View Standings
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {buybackPlayerId && (
+                  <div style={{
+                    background:'rgba(255,184,0,.1)', border:'1px solid rgba(255,184,0,.3)',
+                    borderRadius:10, padding:'12px 18px', marginBottom:14,
+                    display:'flex', alignItems:'center', gap:10
+                  }}>
+                    <span style={{fontSize:18}}>🏀</span>
+                    <div>
+                      <div style={{fontWeight:700, color:'var(--gold)', fontSize:13, letterSpacing:'0.05em', textTransform:'uppercase'}}>Buying Back In</div>
+                      <div style={{fontSize:12, color:'var(--muted)', marginTop:2}}>$25 buyback · pick your teams below to re-enter</div>
+                    </div>
+                  </div>
+                )}
+                <div className="card" style={{padding:'24px 26px', marginBottom:20}}>
+                  <div className="anton" style={{fontSize:18, color:'var(--cream)', letterSpacing:'0.05em', marginBottom:18}}>
+                    {buybackPlayerId ? `BUYBACK PICKS` : `SUBMIT YOUR PICKS`}
+                  </div>
+
+                  <div style={{marginBottom:16}}>
+                    <label className="form-label">Your Name</label>
+                    <input className="form-input" placeholder="Enter your name"
+                           value={pickerName} onChange={e => setPickerName(e.target.value)} />
+                  </div>
+
+                  <div style={{marginBottom:20}}>
+                    <label className="form-label">Pick Day</label>
+                    <select className="form-select" value={selectedDay} onChange={e => setSelectedDay(e.target.value)}>
+                      {DAY_ORDER.map(d => (
+                        <option key={d} value={d}>{DAY_FULL[d]}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{marginBottom:8}}>
+                    <label className="form-label">Team Picks</label>
+                    {teamPicks.map((pick, idx) => (
+                      <div key={idx} style={{display:'flex', gap:8, marginBottom:8}}>
+                        <select className="form-select" value={pick} onChange={e => handlePickCountChange(idx, e.target.value)}>
+                          <option value="">Select team…</option>
+                          {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        {teamPicks.length > 1 && (
+                          <button className="btn btn-ghost" style={{padding:'10px 14px', flexShrink:0}}
+                                  onClick={() => removePickSlot(idx)}>✕</button>
+                        )}
+                      </div>
+                    ))}
+                    <button className="btn btn-ghost" style={{marginTop:4, width:'100%', justifyContent:'center'}}
+                            onClick={addPickSlot}>
+                      + Add Pick
+                    </button>
+                  </div>
+
+                  {submitErr && (
+                    <div style={{color:'var(--danger)', fontSize:13, marginBottom:12, padding:'10px 14px',
+                                 background:'rgba(248,113,113,.08)', border:'1px solid rgba(248,113,113,.2)', borderRadius:8}}>
+                      {submitErr}
+                    </div>
+                  )}
+
+                  <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8}}
+                          onClick={handleSubmitPicks}>
+                    Lock In Picks
+                  </button>
+                </div>
+
+                {/* Pool rules reminder */}
+                <div className="card" style={{padding:'20px 22px'}}>
+                  <div className="anton" style={{fontSize:13, color:'var(--muted)', letterSpacing:'0.1em', marginBottom:12}}>PICK REQUIREMENTS</div>
+                  {[
+                    {day:'Thursday R1', req:'2 picks required (4 if buying back after Thursday loss)'},
+                    {day:'Friday R1',   req:'2 picks required (4 if buying back after Thursday loss)'},
+                    {day:'Saturday R2', req:'1 pick (3 if buying back after Friday loss)'},
+                    {day:'Sunday R2',   req:'1 pick (3 if buying back after Saturday loss)'},
+                    {day:'Sweet 16+',   req:'1 pick per day — no more buybacks'},
+                  ].map(r => (
+                    <div key={r.day} style={{display:'flex', gap:10, marginBottom:8, fontSize:13}}>
+                      <span className="badge badge-pending" style={{flexShrink:0, fontSize:10}}>{r.day}</span>
+                      <span style={{color:'var(--muted)'}}>{r.req}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── RULES ── */}
+        {activeTab === 'rules' && (
+          <div className="anim-up">
+            {/* Big heading with basketball */}
+            <div style={{display:'flex', alignItems:'flex-end', gap:20, marginBottom:32}}>
+              <div>
+                <div className="anton" style={{fontSize:42, color:'var(--cream)', lineHeight:1, letterSpacing:'0.03em'}}>
+                  HOW TO PLAY
+                </div>
+                <div style={{color:'var(--muted)', fontSize:14, marginTop:6, maxWidth:500, lineHeight:1.6}}>
+                  Last person standing wins it all. Simple in theory, brutal in practice.
+                </div>
+              </div>
+              <Basketball size={80} bounce={true} glow={true} />
+            </div>
+
+            <div style={{display:'grid', gap:14}}>
+              {RULES_DATA.map((rule, i) => (
+                <div key={rule.id} className={`rule-card ${rule.color} anim-up`} style={{animationDelay: `${i*60}ms`}}>
+                  <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:8}}>
+                    <span className="badge badge-pending" style={{fontSize:10}}>{rule.day}</span>
+                    <div className="anton" style={{fontSize:14, color:'var(--cream)', letterSpacing:'0.05em'}}>
+                      {rule.heading}
+                    </div>
+                  </div>
+                  <div style={{color:'var(--muted)', fontSize:14, lineHeight:1.65}}>{rule.body}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              marginTop:28, padding:'20px 24px',
+              background:'rgba(255,184,0,.06)', border:'1px solid rgba(255,184,0,.2)', borderRadius:10
+            }}>
+              <div className="anton" style={{fontSize:14, color:'var(--gold)', letterSpacing:'0.08em', marginBottom:8}}>
+                ENTRY FEE & BUYBACKS
+              </div>
+              <div style={{color:'var(--muted)', fontSize:14, lineHeight:1.65, marginBottom:14}}>
+                Entry is $25. Each buyback costs another $25. Max three buybacks total, no buybacks after Sunday R2.
+                Winner takes the entire pot. Multiple survivors can split or keep playing.
+              </div>
+              <a href="https://www.venmo.com/Ryan-Keefer-2" target="_blank" rel="noopener noreferrer">
+                <button className="btn btn-gold">Pay via Venmo</button>
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* ── ADMIN ── */}
+        {activeTab === 'admin' && isAdmin && (
+          <div className="anim-up">
+            <div style={{display:'flex', gap:8, marginBottom:20}}>
+              {['players','games','process'].map(t => (
+                <div key={t} className={`subtab ${adminTab===t?'active':''}`} onClick={() => setAdminTab(t)}>
+                  {t.charAt(0).toUpperCase()+t.slice(1)}
+                </div>
+              ))}
+            </div>
+
+            {/* Admin: Players */}
+            {adminTab === 'players' && (
+              <div className="card">
+                <div className="card-header">
+                  <div className="card-title">Player Management</div>
+                  <span className="badge badge-alive">{players.length} players</span>
+                </div>
+                <div style={{overflowX:'auto'}}>
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Player</th><th>Status</th><th>Buybacks</th><th>Spent</th><th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {players.map(p => (
+                        <tr key={p.id}>
+                          <td>
+                            <div style={{display:'flex', alignItems:'center', gap:10}}>
+                              <Avatar name={p.name} size={30} />
+                              <span style={{fontWeight:600}}>{p.name}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`badge ${p.status==='alive'?'badge-alive':'badge-out'}`}>
+                              {p.status}
+                            </span>
+                          </td>
+                          <td><span className="mono" style={{color:'var(--gold)'}}>{p.buybacks}</span></td>
+                          <td><span className="mono" style={{color:'var(--accent)'}}>${p.totalSpent}</span></td>
+                          <td>
+                            <button className="btn btn-ghost" style={{padding:'5px 12px', fontSize:12}}
+                                    onClick={() => setEditingPlayer(p)}>
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Admin: Games */}
+            {adminTab === 'games' && (
+              <div className="card">
+                <div className="card-header">
+                  <div className="card-title">Game Results</div>
+                </div>
+                <div style={{overflowX:'auto'}}>
+                  <table className="admin-table">
+                    <thead>
+                      <tr><th>Day</th><th>Matchup</th><th>Score</th><th>Winner</th></tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(GAMES_DATA).flatMap(([day, games]) =>
+                        games.map(g => (
+                          <tr key={g.id}>
+                            <td><span className="mono" style={{fontSize:12, color:'var(--muted)'}}>{DAY_LABELS[day]}</span></td>
+                            <td style={{whiteSpace:'nowrap'}}>{g.home} vs {g.away}</td>
+                            <td>
+                              {g.final
+                                ? <span className="mono">{g.homeScore}–{g.awayScore}</span>
+                                : <span className="badge badge-pending" style={{fontSize:10}}>TBD</span>}
+                            </td>
+                            <td>
+                              {g.winner
+                                ? <span className="badge badge-win">{g.winner}</span>
+                                : <span style={{color:'var(--dim)'}}>—</span>}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Admin: Process */}
+            {adminTab === 'process' && (
+              <div>
+                <div className="card" style={{padding:'22px 24px', marginBottom:16}}>
+                  <div className="card-title" style={{marginBottom:16}}>End-of-Day Processing</div>
+                  <div style={{color:'var(--muted)', fontSize:14, lineHeight:1.65, marginBottom:20}}>
+                    After all games for a day are final, run end-of-day processing to:
+                    update player statuses, mark eliminations, flag buyback needs, and advance to the next round.
+                  </div>
+                  <div style={{display:'flex', gap:10, marginBottom:20}}>
+                    <select className="form-select" style={{maxWidth:260}}>
+                      {DAY_ORDER.map(d => (
+                        <option key={d} value={d}>{DAY_FULL[d]}</option>
+                      ))}
+                    </select>
+                    <button className="btn btn-primary">Process Day</button>
+                  </div>
+                  <div style={{padding:'16px 18px', background:'rgba(255,184,0,.06)',
+                               border:'1px solid rgba(255,184,0,.2)', borderRadius:8, fontSize:13}}>
+                    <span style={{color:'var(--gold)', fontWeight:700}}>⚠ Warning: </span>
+                    <span style={{color:'var(--muted)'}}>This action is irreversible. Make sure all scores are entered before processing.</span>
+                  </div>
+                </div>
+
+                <div className="card" style={{padding:'22px 24px'}}>
+                  <div className="card-title" style={{marginBottom:14}}>Pool Summary</div>
+                  <div style={{display:'grid', gap:10}}>
+                    {[
+                      {label:'Total Entries',    val:players.length, color:'var(--text)'},
+                      {label:'Active Players',   val:alivePlayers.length, color:'var(--success)'},
+                      {label:'Eliminated',       val:eliminatedPlayers.length, color:'var(--danger)'},
+                      {label:'Total Buybacks',   val:players.reduce((s,p) => s+p.buybacks,0), color:'var(--gold)'},
+                      {label:'Total Prize Pool', val:`$${totalPot}`, color:'var(--accent)'},
+                      {label:'Current Round',    val:DAY_FULL[CURRENT_DAY], color:'var(--muted)'},
+                    ].map(r => (
+                      <div key={r.label} style={{display:'flex', justifyContent:'space-between', alignItems:'center',
+                                                  padding:'10px 0', borderBottom:'1px solid var(--border)'}}>
+                        <span style={{color:'var(--muted)', fontSize:13}}>{r.label}</span>
+                        <strong className="mono" style={{color:r.color, fontSize:14}}>{r.val}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Player Modal */}
+            {editingPlayer && (
+              <div style={{
+                position:'fixed', inset:0, background:'rgba(0,0,0,.75)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                zIndex:1000, padding:16, backdropFilter:'blur(4px)'
+              }}>
+                <div className="card" style={{width:'100%', maxWidth:440}}>
+                  <div className="card-header">
+                    <div className="card-title">Edit Player — {editingPlayer.name}</div>
+                    <button className="btn btn-ghost" style={{padding:'5px 10px'}}
+                            onClick={() => setEditingPlayer(null)}>✕</button>
+                  </div>
+                  <div style={{padding:'20px 22px'}}>
+                    <div style={{display:'grid', gap:14}}>
+                      <div>
+                        <label className="form-label">Status</label>
+                        <select className="form-select"
+                                value={editingPlayer.status}
+                                onChange={e => setEditingPlayer({...editingPlayer, status:e.target.value})}>
+                          <option value="alive">Alive</option>
+                          <option value="eliminated">Eliminated</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="form-label">Buybacks Used</label>
+                        <input type="number" className="form-input" min={0} max={3}
+                               value={editingPlayer.buybacks}
+                               onChange={e => setEditingPlayer({...editingPlayer, buybacks:parseInt(e.target.value)||0})} />
+                      </div>
+                      <div>
+                        <label className="form-label">Total Spent ($)</label>
+                        <input type="number" className="form-input" min={25}
+                               value={editingPlayer.totalSpent}
+                               onChange={e => setEditingPlayer({...editingPlayer, totalSpent:parseInt(e.target.value)||25})} />
+                      </div>
+                    </div>
+                    <div style={{display:'flex', gap:10, marginTop:20}}>
+                      <button className="btn btn-primary" style={{flex:1, justifyContent:'center'}}
+                              onClick={() => handleSavePlayer(editingPlayer)}>Save Changes</button>
+                      <button className="btn btn-ghost" onClick={() => setEditingPlayer(null)}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </main>
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

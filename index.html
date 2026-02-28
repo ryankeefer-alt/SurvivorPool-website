@@ -459,6 +459,37 @@ const BUYBACK_DAYS = ['friday_r1', 'saturday_r2', 'sunday_r2'];
 function App() {
   const [activeTab, setActiveTab]   = useState('standings');
   const [players,   setPlayers]     = useState(INITIAL_PLAYERS);
+  const [entriesClosed, setEntriesClosed] = useState(false);
+  const [showAdminPrompt, setShowAdminPrompt] = useState(false);
+  const [adminPin, setAdminPin] = useState('');
+  const [adminErr, setAdminErr] = useState('');
+
+  const ADMIN_PIN = '2025';
+
+  const handleAdminToggle = () => {
+    if (entriesClosed) {
+      // Re-open entries (no pin needed to reopen)
+      setEntriesClosed(false);
+      setShowAdminPrompt(false);
+      setAdminPin('');
+      setAdminErr('');
+    } else {
+      setShowAdminPrompt(true);
+      setAdminPin('');
+      setAdminErr('');
+    }
+  };
+
+  const handleAdminSubmit = () => {
+    if (adminPin === ADMIN_PIN) {
+      setEntriesClosed(true);
+      setShowAdminPrompt(false);
+      setAdminPin('');
+      setAdminErr('');
+    } else {
+      setAdminErr('Incorrect PIN');
+    }
+  };
 
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
@@ -537,11 +568,27 @@ function App() {
                 </div>
               </div>
             </div>
-            <div style={{textAlign:'right'}}>
-              <div className="mono" style={{fontSize:26, color:'var(--gold)', fontWeight:700, lineHeight:1}}>
-                ${totalPot.toLocaleString()}
+            <div style={{display:'flex', alignItems:'center', gap:14}}>
+              <div style={{textAlign:'right'}}>
+                <div className="mono" style={{fontSize:26, color:'var(--gold)', fontWeight:700, lineHeight:1}}>
+                  ${totalPot.toLocaleString()}
+                </div>
+                <div style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:4}}>Total Pot</div>
               </div>
-              <div style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:4}}>Total Pot</div>
+              <button onClick={handleAdminToggle}
+                      title={entriesClosed ? 'Entries closed — click to reopen' : 'Click to close entries'}
+                      style={{
+                        background:'none', border:'none', cursor:'pointer', padding:4,
+                        color: entriesClosed ? 'var(--danger)' : 'var(--muted)',
+                        fontSize:18, lineHeight:1,
+                        opacity: 0.7,
+                        transition: 'opacity .2s, color .2s',
+                      }}
+                      onMouseOver={e => e.currentTarget.style.opacity = 1}
+                      onMouseOut={e => e.currentTarget.style.opacity = 0.7}
+              >
+                {entriesClosed ? '🔒' : '🔓'}
+              </button>
             </div>
           </div>
 
@@ -556,6 +603,42 @@ function App() {
           </div>
         </div>
       </header>
+
+      {/* Admin PIN Modal */}
+      {showAdminPrompt && (
+        <div style={{
+          position:'fixed', inset:0, zIndex:100,
+          background:'rgba(0,0,0,.7)', backdropFilter:'blur(6px)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }} onClick={() => { setShowAdminPrompt(false); setAdminPin(''); setAdminErr(''); }}>
+          <div className="card" style={{padding:'28px 32px', maxWidth:340, width:'90%'}}
+               onClick={e => e.stopPropagation()}>
+            <div className="anton" style={{fontSize:18, color:'var(--cream)', letterSpacing:'0.05em', marginBottom:6}}>
+              CLOSE ENTRIES
+            </div>
+            <div style={{fontSize:13, color:'var(--muted)', marginBottom:18}}>
+              Enter admin PIN to lock entries and reveal all picks.
+            </div>
+            <input className="form-input" type="password" placeholder="Enter PIN"
+                   value={adminPin} onChange={e => setAdminPin(e.target.value)}
+                   onKeyDown={e => e.key === 'Enter' && handleAdminSubmit()}
+                   autoFocus />
+            {adminErr && (
+              <div style={{color:'var(--danger)', fontSize:12, marginTop:8}}>{adminErr}</div>
+            )}
+            <div style={{display:'flex', gap:10, marginTop:16}}>
+              <button className="btn btn-ghost" style={{flex:1, justifyContent:'center'}}
+                      onClick={() => { setShowAdminPrompt(false); setAdminPin(''); setAdminErr(''); }}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" style={{flex:1, justifyContent:'center'}}
+                      onClick={handleAdminSubmit}>
+                Lock Entries
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main style={{maxWidth:1100, margin:'0 auto', padding:'28px 16px 60px'}}>
@@ -583,13 +666,34 @@ function App() {
             <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
               <div className="card-header">
                 <div className="card-title">Entries</div>
-                <span className="badge badge-alive">{players.length} entered</span>
+                <div style={{display:'flex', alignItems:'center', gap:8}}>
+                  <span className="badge badge-alive">{players.length} entered</span>
+                  {!entriesClosed && players.length > 0 && (
+                    <span className="badge badge-pending" style={{fontSize:10}}>Picks Hidden</span>
+                  )}
+                  {entriesClosed && (
+                    <span className="badge badge-out" style={{fontSize:10}}>Entries Locked</span>
+                  )}
+                </div>
               </div>
               {players.length === 0 ? (
                 <div style={{padding:'40px 22px', textAlign:'center'}}>
                   <Basketball size={48} bounce={true} glow={true} />
                   <div style={{color:'var(--muted)', marginTop:16, fontSize:14}}>No entries yet. Be the first to submit your picks!</div>
                   <button className="btn btn-primary" style={{marginTop:16}} onClick={() => handleTabChange('picks')}>
+                    Submit Picks
+                  </button>
+                </div>
+              ) : !entriesClosed ? (
+                <div style={{padding:'32px 22px', textAlign:'center'}}>
+                  <div style={{fontSize:40, marginBottom:12}}>🔒</div>
+                  <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>
+                    {players.length} {players.length === 1 ? 'ENTRY' : 'ENTRIES'} RECEIVED
+                  </div>
+                  <div style={{color:'var(--muted)', marginTop:8, fontSize:13, maxWidth:340, margin:'8px auto 0'}}>
+                    Picks will be revealed once the administrator closes entries. Submit your picks before it's too late!
+                  </div>
+                  <button className="btn btn-primary" style={{marginTop:18}} onClick={() => handleTabChange('picks')}>
                     Submit Picks
                   </button>
                 </div>
@@ -688,7 +792,20 @@ function App() {
         {/* ── SUBMIT PICKS ── */}
         {activeTab === 'picks' && (
           <div className="anim-up" style={{maxWidth:560}}>
-            {submitted ? (
+            {entriesClosed ? (
+              <div className="card" style={{padding:'40px 32px', textAlign:'center'}}>
+                <div style={{fontSize:48, marginBottom:12}}>🔒</div>
+                <div className="anton" style={{fontSize:24, color:'var(--danger)', letterSpacing:'0.04em'}}>
+                  ENTRIES ARE CLOSED
+                </div>
+                <div style={{color:'var(--muted)', marginTop:10, fontSize:14}}>
+                  Submissions have been locked. Head to Standings to see everyone's picks.
+                </div>
+                <button className="btn btn-primary" style={{marginTop:20}} onClick={() => handleTabChange('standings')}>
+                  View Standings
+                </button>
+              </div>
+            ) : submitted ? (
               <div className="card" style={{padding:'40px 32px', textAlign:'center'}}>
                 <Basketball size={72} bounce={true} glow={true} className="" />
                 <div className="anton" style={{fontSize:28, color:'var(--success)', marginTop:20, letterSpacing:'0.04em'}}>
@@ -778,11 +895,7 @@ function App() {
                       <div key={p.id} style={{display:'flex', justifyContent:'space-between', alignItems:'center',
                                               padding:'8px 0', borderBottom:'1px solid var(--border)', fontSize:13}}>
                         <span style={{color:'var(--cream)', fontWeight:600}}>{p.name}</span>
-                        <div style={{display:'flex', gap:6}}>
-                          {p.picks.thursday_r1.map(t => (
-                            <span key={t} className="badge badge-pending" style={{fontSize:10}}>{t}</span>
-                          ))}
-                        </div>
+                        <span className="badge badge-pending" style={{fontSize:10}}>Picks Hidden</span>
                       </div>
                     ))}
                   </div>

@@ -2,12 +2,13 @@
   "name": "knockout-pool",
   "version": "1.0.0",
   "description": "March Madness Knockout Pool 2025",
-  "main": "serve.mjs",
+  "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "node serve.mjs"
+    "start": "node app.js"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "dependencies": {}
 }

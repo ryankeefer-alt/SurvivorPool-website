@@ -448,7 +448,32 @@ const RULES_DATA = [
 
 const INITIAL_PLAYERS = [];
 
-const GAMES_DATA = {};
+const GAMES_DATA = {
+  thursday_r1: [
+    { id: 1, home: 'Houston', away: 'SIU Edwardsville', homeScore: 78, awayScore: 40, winner: 'Houston', final: true },
+    { id: 2, home: 'Auburn', away: 'Alabama State', homeScore: 83, awayScore: 63, winner: 'Auburn', final: true },
+    { id: 3, home: "St. John's", away: 'Omaha', homeScore: 83, awayScore: 53, winner: "St. John's", final: true },
+    { id: 4, home: 'Tennessee', away: 'Wofford', homeScore: 77, awayScore: 62, winner: 'Tennessee', final: true },
+    { id: 5, home: 'Wisconsin', away: 'Montana', homeScore: 85, awayScore: 66, winner: 'Wisconsin', final: true },
+    { id: 6, home: 'Texas Tech', away: 'UNC Wilmington', homeScore: 82, awayScore: 72, winner: 'Texas Tech', final: true },
+    { id: 7, home: 'Purdue', away: 'High Point', homeScore: 75, awayScore: 63, winner: 'Purdue', final: true },
+    { id: 8, home: 'Texas A&M', away: 'Yale', homeScore: 80, awayScore: 71, winner: 'Texas A&M', final: true },
+    { id: 9, home: 'Michigan', away: 'UC San Diego', homeScore: 68, awayScore: 65, winner: 'Michigan', final: true },
+    { id: 10, home: 'McNeese State', away: 'Clemson', homeScore: 69, awayScore: 67, winner: 'McNeese State', final: true },
+    { id: 11, home: 'BYU', away: 'VCU', homeScore: 80, awayScore: 71, winner: 'BYU', final: true },
+    { id: 12, home: 'Drake', away: 'Missouri', homeScore: 67, awayScore: 57, winner: 'Drake', final: true },
+    { id: 13, home: 'UCLA', away: 'Utah State', homeScore: 72, awayScore: 47, winner: 'UCLA', final: true },
+    { id: 14, home: 'Arkansas', away: 'Kansas', homeScore: 79, awayScore: 72, winner: 'Arkansas', final: true },
+    { id: 15, home: 'Gonzaga', away: 'Georgia', homeScore: 89, awayScore: 68, winner: 'Gonzaga', final: true },
+    { id: 16, home: 'Creighton', away: 'Louisville', homeScore: 89, awayScore: 75, winner: 'Creighton', final: true },
+  ]
+};
+
+// Compute winners from game results
+const THURSDAY_WINNERS = new Set();
+if (GAMES_DATA.thursday_r1) {
+  GAMES_DATA.thursday_r1.forEach(g => { if (g.final && g.winner) THURSDAY_WINNERS.add(g.winner); });
+}
 
 const CURRENT_DAY = 'thursday_r1';
 const BUYBACK_DAYS = ['friday_r1', 'saturday_r2', 'sunday_r2'];
@@ -520,16 +545,25 @@ function App() {
     // Check if name already submitted
     const existing = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
     if (existing) { setSubmitErr('That name has already been submitted. Use a different name or contact the pool admin.'); return; }
+    // Evaluate picks against game results
+    let result = 'pending';
+    let status = 'alive';
+    if (THURSDAY_WINNERS.size > 0) {
+      const pick1Won = THURSDAY_WINNERS.has(teamPick1);
+      const pick2Won = THURSDAY_WINNERS.has(teamPick2);
+      if (pick1Won && pick2Won) { result = 'win'; }
+      else { result = 'loss'; status = 'eliminated'; }
+    }
     // Create new player entry
     const newPlayer = {
       id: Date.now(),
       name: pickerName.trim(),
-      status: 'alive',
+      status: status,
       buybacks: 0,
       needsBuyback: false,
       totalSpent: 25,
       picks: { thursday_r1: [teamPick1, teamPick2] },
-      results: { thursday_r1: 'pending' }
+      results: { thursday_r1: result }
     };
     setPlayers(prev => [...prev, newPlayer]);
     setSubmitted(true);
@@ -666,20 +700,12 @@ function App() {
             </div>
 
             {/* Entries */}
-            <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
-              <div className="card-header">
-                <div className="card-title">Entries</div>
-                <div style={{display:'flex', alignItems:'center', gap:8}}>
-                  <span className="badge badge-alive">{players.length} entered</span>
-                  {!entriesClosed && players.length > 0 && (
-                    <span className="badge badge-pending" style={{fontSize:10}}>Picks Hidden</span>
-                  )}
-                  {entriesClosed && (
-                    <span className="badge badge-out" style={{fontSize:10}}>Entries Locked</span>
-                  )}
+            {players.length === 0 ? (
+              <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
+                <div className="card-header">
+                  <div className="card-title">Entries</div>
+                  <span className="badge badge-alive">0 entered</span>
                 </div>
-              </div>
-              {players.length === 0 ? (
                 <div style={{padding:'40px 22px', textAlign:'center'}}>
                   <Basketball size={48} bounce={true} glow={true} />
                   <div style={{color:'var(--muted)', marginTop:16, fontSize:14}}>No entries yet. Be the first to submit your picks!</div>
@@ -687,7 +713,16 @@ function App() {
                     Submit Picks
                   </button>
                 </div>
-              ) : !entriesClosed ? (
+              </div>
+            ) : !entriesClosed ? (
+              <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
+                <div className="card-header">
+                  <div className="card-title">Entries</div>
+                  <div style={{display:'flex', alignItems:'center', gap:8}}>
+                    <span className="badge badge-alive">{players.length} entered</span>
+                    <span className="badge badge-pending" style={{fontSize:10}}>Picks Hidden</span>
+                  </div>
+                </div>
                 <div style={{padding:'32px 22px', textAlign:'center'}}>
                   <div style={{fontSize:40, marginBottom:12}}>🔒</div>
                   <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>
@@ -700,25 +735,71 @@ function App() {
                     Submit Picks
                   </button>
                 </div>
-              ) : (
-                [...players].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
-                  <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`}}>
-                    <Avatar name={p.name} size={34} />
-                    <div style={{flex:1}}>
-                      <div style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</div>
-                      <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>
-                        $25 entry
-                      </div>
-                    </div>
-                    <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                      {p.picks.thursday_r1 && p.picks.thursday_r1.map(t => (
-                        <span key={t} className="badge badge-pending" style={{fontSize:10}}>{t}</span>
-                      ))}
+              </div>
+            ) : (
+              <div>
+                {/* Still In It */}
+                <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
+                  <div className="card-header">
+                    <div className="card-title" style={{color:'var(--success)'}}>Still In It</div>
+                    <div style={{display:'flex', alignItems:'center', gap:8}}>
+                      <span className="badge badge-alive">{alivePlayers.length}</span>
+                      <span className="badge badge-out" style={{fontSize:10}}>Entries Locked</span>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                  {alivePlayers.length === 0 ? (
+                    <div style={{padding:'24px 22px', textAlign:'center', color:'var(--muted)', fontSize:13}}>
+                      No one survived Thursday!
+                    </div>
+                  ) : (
+                    [...alivePlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
+                      <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`}}>
+                        <Avatar name={p.name} size={34} />
+                        <div style={{flex:1}}>
+                          <div style={{display:'flex', alignItems:'center', gap:8}}>
+                            <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
+                            <span className="badge badge-alive" style={{fontSize:9}}>ALIVE</span>
+                          </div>
+                          <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>$25 entry</div>
+                        </div>
+                        <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
+                          {p.picks.thursday_r1 && p.picks.thursday_r1.map(t => (
+                            <span key={t} className={`badge ${THURSDAY_WINNERS.has(t) ? 'badge-win' : 'badge-loss'}`} style={{fontSize:10}}>{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Eliminated */}
+                {eliminatedPlayers.length > 0 && (
+                  <div className="card anim-up anim-up-3" style={{marginBottom:20}}>
+                    <div className="card-header">
+                      <div className="card-title" style={{color:'var(--danger)'}}>Eliminated</div>
+                      <span className="badge badge-out">{eliminatedPlayers.length}</span>
+                    </div>
+                    {[...eliminatedPlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
+                      <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`, opacity:0.7}}>
+                        <Avatar name={p.name} size={34} />
+                        <div style={{flex:1}}>
+                          <div style={{display:'flex', alignItems:'center', gap:8}}>
+                            <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
+                            <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
+                          </div>
+                          <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>$25 entry</div>
+                        </div>
+                        <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
+                          {p.picks.thursday_r1 && p.picks.thursday_r1.map(t => (
+                            <span key={t} className={`badge ${THURSDAY_WINNERS.has(t) ? 'badge-win' : 'badge-loss'}`} style={{fontSize:10}}>{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -740,9 +821,12 @@ function App() {
                 <div key={day} style={{marginBottom:24}}>
                   <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
                     <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>{DAY_FULL[day]}</div>
-                    {day === CURRENT_DAY && (
-                      <span className="badge badge-pending" style={{animation:'glow-pulse 1.5s ease-in-out infinite'}}>Live</span>
-                    )}
+                    {day === CURRENT_DAY && (() => {
+                      const allFinal = games.every(g => g.final);
+                      return allFinal
+                        ? <span className="badge badge-win" style={{fontSize:10}}>Final</span>
+                        : <span className="badge badge-pending" style={{animation:'glow-pulse 1.5s ease-in-out infinite'}}>Live</span>;
+                    })()}
                   </div>
                   <div className="card">
                     {games.map((game, idx) => (

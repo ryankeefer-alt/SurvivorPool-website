@@ -307,7 +307,7 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useMemo, useCallback } = React;
+const { useState, useMemo, useCallback, useEffect } = React;
 
 /* ────────────────────────────────
    SVG Basketball Component
@@ -404,14 +404,6 @@ const DAY_FULL = {
   saturday_ff:'Saturday — Final Four', monday_champ:'Monday — Championship'
 };
 
-const TEAMS = [
-  'Alabama','Arizona','Arkansas','Auburn','Baylor','Connecticut','Creighton','Duke',
-  'Florida','Florida Atlantic','Gonzaga','Houston','Illinois','Iowa State','Kansas',
-  'Kentucky','Marquette','Michigan State','Missouri','Notre Dame','Ohio State',
-  'Penn State','Purdue','San Diego State','Tennessee','Texas','Texas A&M',
-  'UCLA','USC','Virginia','Xavier','Xavier'
-];
-
 const RULES_DATA = [
   {
     id:'r1', day:`Thursday R1`, color:'orange',
@@ -445,113 +437,7 @@ const RULES_DATA = [
   },
 ];
 
-const INITIAL_PLAYERS = [
-  {
-    id:1, name:'Ryan', status:'alive', buybacks:0, needsBuyback:false, totalSpent:25,
-    picks:{thursday_r1:['Duke','Gonzaga'], friday_r1:['Houston','Kansas'], saturday_r2:['Connecticut'], sunday_r2:['Alabama'], thursday_s16:['Purdue']},
-    results:{thursday_r1:'win', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', thursday_s16:'win'}
-  },
-  {
-    id:2, name:'Marcus', status:'alive', buybacks:0, needsBuyback:false, totalSpent:25,
-    picks:{thursday_r1:['Baylor','Kentucky'], friday_r1:['Duke','Tennessee'], saturday_r2:['Houston'], sunday_r2:['Connecticut'], friday_s16:['Alabama']},
-    results:{thursday_r1:'win', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', friday_s16:'pending'}
-  },
-  {
-    id:3, name:'Priya', status:'alive', buybacks:1, needsBuyback:false, totalSpent:50,
-    picks:{thursday_r1:['Texas','UCLA'], friday_r1:['Baylor','Purdue','Kansas','Michigan State'], saturday_r2:['Duke'], sunday_r2:['Gonzaga'], thursday_s16:['Texas']},
-    results:{thursday_r1:'loss', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', thursday_s16:'pending'}
-  },
-  {
-    id:4, name:'Dante', status:'alive', buybacks:1, needsBuyback:false, totalSpent:50,
-    picks:{thursday_r1:['Auburn','Creighton'], friday_r1:['Houston','Alabama','Florida','Iowa State'], saturday_r2:['Tennessee'], sunday_r2:['Duke'], friday_s16:['Connecticut']},
-    results:{thursday_r1:'loss', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', friday_s16:'pending'}
-  },
-  {
-    id:5, name:'Sofia', status:'alive', buybacks:0, needsBuyback:false, totalSpent:25,
-    picks:{thursday_r1:['Connecticut','Purdue'], friday_r1:['Alabama','Gonzaga'], saturday_r2:['Kansas'], sunday_r2:['Tennessee'], thursday_s16:['Houston']},
-    results:{thursday_r1:'win', friday_r1:'win', saturday_r2:'win', sunday_r2:'win', thursday_s16:'pending'}
-  },
-  {
-    id:6, name:'Jake', status:'eliminated', buybacks:2, needsBuyback:false, totalSpent:75,
-    picks:{thursday_r1:['Florida','Missouri'], friday_r1:['Duke','Texas','Penn State','Xavier'], saturday_r2:['Alabama','Baylor','Creighton'], sunday_r2:['Houston']},
-    results:{thursday_r1:'loss', friday_r1:'win', saturday_r2:'loss', sunday_r2:'loss'}
-  },
-  {
-    id:7, name:'Layla', status:'eliminated', buybacks:1, needsBuyback:false, totalSpent:50,
-    picks:{thursday_r1:['Illinois','Ohio State'], friday_r1:['Connecticut','Arkansas','Florida Atlantic','Virginia'], saturday_r2:['Purdue']},
-    results:{thursday_r1:'loss', friday_r1:'win', saturday_r2:'loss'}
-  },
-  {
-    id:8, name:'Omar', status:'eliminated', buybacks:0, needsBuyback:false, totalSpent:25,
-    picks:{thursday_r1:['Kentucky','Marquette'], friday_r1:['Baylor','Tennessee']},
-    results:{thursday_r1:'win', friday_r1:'loss'}
-  },
-];
-
-const GAMES_DATA = {
-  thursday_r1: [
-    {id:'g1',  home:'Duke',       away:'Vermont',    homeScore:85, awayScore:61, final:true, winner:'Duke'},
-    {id:'g2',  home:'Gonzaga',    away:'Grand Canyon',homeScore:79,awayScore:62, final:true, winner:'Gonzaga'},
-    {id:'g3',  home:'Houston',    away:'Longwood',   homeScore:93, awayScore:57, final:true, winner:'Houston'},
-    {id:'g4',  home:'Kansas',     away:'Howard',     homeScore:96, awayScore:68, final:true, winner:'Kansas'},
-    {id:'g5',  home:'Connecticut',away:'Iona',       homeScore:87, awayScore:63, final:true, winner:'Connecticut'},
-    {id:'g6',  home:'Purdue',     away:'Texas Southern',homeScore:99,awayScore:75,final:true,winner:'Purdue'},
-    {id:'g7',  home:'Alabama',    away:'Texas A&M CC',homeScore:96,awayScore:75, final:true, winner:'Alabama'},
-    {id:'g8',  home:'Baylor',     away:'UC Santa Barbara',homeScore:74,awayScore:61,final:true,winner:'Baylor'},
-    {id:'g9',  home:'Kentucky',   away:'Providence', homeScore:61, awayScore:53, final:true, winner:'Kentucky'},
-    {id:'g10', home:'Marquette',  away:'Vermont',    homeScore:78, awayScore:61, final:true, winner:'Marquette'},
-    {id:'g11', home:'Texas',      away:'Colgate',    homeScore:71, awayScore:63, final:true, winner:'Texas'},
-    {id:'g12', home:'UCLA',       away:'NC Central', homeScore:86, awayScore:52, final:true, winner:'UCLA'},
-    {id:'g13', home:'Auburn',     away:'Iowa',       homeScore:83, awayScore:75, final:true, winner:'Auburn'},
-    {id:'g14', home:'Creighton',  away:'NC State',   homeScore:72, awayScore:69, final:true, winner:'Creighton'},
-    {id:'g15', home:'Tennessee',  away:'Louisiana',  homeScore:58, awayScore:55, final:true, winner:'Tennessee'},
-    {id:'g16', home:'Illinois',   away:'Arkansas',   homeScore:69, awayScore:73, final:false, winner:'Arkansas'},
-  ],
-  friday_r1: [
-    {id:'g17', home:'Michigan State',away:'USC',    homeScore:72, awayScore:62, final:true, winner:'Michigan State'},
-    {id:'g18', home:'Arizona',    away:'Princeton', homeScore:59, awayScore:55, final:true, winner:'Arizona'},
-    {id:'g19', home:'Purdue',     away:'Memphis',   homeScore:99, awayScore:88, final:true, winner:'Purdue'},
-    {id:'g20', home:'Duke',       away:'Oral Roberts',homeScore:74,awayScore:65,final:true, winner:'Duke'},
-    {id:'g21', home:'Houston',    away:'Auburn',    homeScore:81, awayScore:64, final:true, winner:'Houston'},
-    {id:'g22', home:'Alabama',    away:'Maryland',  homeScore:73, awayScore:51, final:true, winner:'Alabama'},
-    {id:'g23', home:'Florida',    away:'Colorado',  homeScore:75, awayScore:58, final:true, winner:'Florida'},
-    {id:'g24', home:'Iowa State', away:'Pittsburgh',homeScore:59, awayScore:41, final:true, winner:'Iowa State'},
-    {id:'g25', home:'San Diego State',away:'Charleston',homeScore:63,awayScore:57,final:true,winner:'San Diego State'},
-    {id:'g26', home:'Baylor',     away:'UC Davis',  homeScore:85, awayScore:76, final:true, winner:'Baylor'},
-    {id:'g27', home:'Tennessee',  away:'Duke Blue Devils',homeScore:71,awayScore:68,final:false,winner:null},
-    {id:'g28', home:'Connecticut',away:'Saint Mary',homeScore:null,awayScore:null,final:false,winner:null},
-  ],
-  saturday_r2: [
-    {id:'g29', home:'Connecticut',away:'Arkansas',  homeScore:82, awayScore:68, final:true,  winner:'Connecticut'},
-    {id:'g30', home:'Duke',       away:'Tennessee', homeScore:69, awayScore:62, final:true,  winner:'Duke'},
-    {id:'g31', home:'Houston',    away:'Iowa State',homeScore:77, awayScore:71, final:true,  winner:'Houston'},
-    {id:'g32', home:'Alabama',    away:'Michigan State',homeScore:71,awayScore:51,final:true,winner:'Alabama'},
-    {id:'g33', home:'Kansas',     away:'Arkansas',  homeScore:74, awayScore:68, final:true,  winner:'Kansas'},
-    {id:'g34', home:'Purdue',     away:'Florida Atlantic',homeScore:79,awayScore:67,final:true,winner:'Purdue'},
-    {id:'g35', home:'Baylor',     away:'Creighton', homeScore:70, awayScore:73, final:true,  winner:'Creighton'},
-    {id:'g36', home:'UCLA',       away:'Illinois',  homeScore:68, awayScore:55, final:true,  winner:'UCLA'},
-  ],
-  sunday_r2: [
-    {id:'g37', home:'Gonzaga',    away:'UCLA',      homeScore:79, awayScore:76, final:true,  winner:'Gonzaga'},
-    {id:'g38', home:'Tennessee',  away:'Duke',      homeScore:65, awayScore:62, final:true,  winner:'Tennessee'},
-    {id:'g39', home:'Texas',      away:'Penn State',homeScore:71, awayScore:66, final:true,  winner:'Texas'},
-    {id:'g40', home:'Purdue',     away:'Memphis',   homeScore:91, awayScore:80, final:true,  winner:'Purdue'},
-    {id:'g41', home:'Kansas',     away:'Arkansas',  homeScore:72, awayScore:68, final:true,  winner:'Kansas'},
-  ],
-  thursday_s16: [
-    {id:'g42', home:'Purdue',     away:'Duke',      homeScore:72, awayScore:66, final:true,  winner:'Purdue'},
-    {id:'g43', home:'Texas',      away:'Alabama',   homeScore:null,awayScore:null,final:false,winner:null},
-    {id:'g44', home:'Houston',    away:'Arizona',   homeScore:null,awayScore:null,final:false,winner:null},
-  ],
-  friday_s16: [
-    {id:'g45', home:'Connecticut',away:'Gonzaga',   homeScore:null,awayScore:null,final:false,winner:null},
-    {id:'g46', home:'Alabama',    away:'Tennessee', homeScore:null,awayScore:null,final:false,winner:null},
-  ],
-};
-
-const CURRENT_DAY = 'friday_s16';
-const BUYBACK_DAYS = ['friday_r1', 'saturday_r2', 'sunday_r2'];
-const buybackOpen = BUYBACK_DAYS.includes(CURRENT_DAY);
+/* Data now loaded from /api/state — see App component */
 
 const getRequiredPicks = (player, day) => {
   if (!player.needsBuyback) {
@@ -566,22 +452,126 @@ const getRequiredPicks = (player, day) => {
    MAIN APP
 ──────────────────────────────── */
 function App() {
-  const [activeTab, setActiveTab]   = useState('standings');
-  const [isAdmin,   setIsAdmin]     = useState(false);
-  const [players,   setPlayers]     = useState(INITIAL_PLAYERS);
-  const [adminTab,  setAdminTab]    = useState('players');
+  // ── Loading & Data State ──
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [siteLocked, setSiteLocked] = useState(false);
+  const [lockMessage, setLockMessage] = useState('');
+
+  // ── Data from API ──
+  const [config, setConfig] = useState(null);
+  const [players, setPlayers] = useState([]);
+  const [gamesData, setGamesData] = useState({});
+
+  // ── UI State ──
+  const [activeTab, setActiveTab] = useState('standings');
+  const [adminTab, setAdminTab] = useState('players');
   const [editingPlayer, setEditingPlayer] = useState(null);
 
+  // ── Admin Auth State ──
+  const [adminAuthed, setAdminAuthed] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminLoginErr, setAdminLoginErr] = useState('');
+
   // ── Submit Picks State ──
-  const [pickerName,      setPickerName]      = useState('');
-  const [selectedDay,     setSelectedDay]     = useState(CURRENT_DAY);
-  const [teamPicks,       setTeamPicks]       = useState(['']);
-  const [submitted,       setSubmitted]       = useState(false);
-  const [submitErr,       setSubmitErr]       = useState('');
+  const [pickerName, setPickerName] = useState('');
+  const [selectedDay, setSelectedDay] = useState('');
+  const [teamPicks, setTeamPicks] = useState(['']);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitErr, setSubmitErr] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [buybackPlayerId, setBuybackPlayerId] = useState(null);
+
+  // ── Admin action states ──
+  const [processDay, setProcessDay] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [processResult, setProcessResult] = useState(null);
+  const [editingGame, setEditingGame] = useState(null);
+  const [addingGame, setAddingGame] = useState(null);
+  const [newPlayerName, setNewPlayerName] = useState('');
+
+  // ── Derived values from config ──
+  const CURRENT_DAY = config?.currentDay || 'thursday_r1';
+  const BUYBACK_DAYS = config?.buybackDays || [];
+  const TEAMS = config?.teams || [];
+  const buybackOpen = BUYBACK_DAYS.includes(CURRENT_DAY);
+
+  // ── Fetch all data from API ──
+  const fetchState = useCallback(async () => {
+    try {
+      const headers = {};
+      if (adminAuthed && adminPassword) {
+        headers['X-Admin-Password'] = adminPassword;
+      }
+      const resp = await fetch('/api/state', { headers });
+      const data = await resp.json();
+
+      if (data.siteLocked && !adminAuthed) {
+        setSiteLocked(true);
+        setLockMessage(data.lockMessage || 'The pool is being updated.');
+        setLoading(false);
+        return;
+      }
+
+      setSiteLocked(false);
+      setConfig(data.config);
+      setPlayers(data.players || []);
+      setGamesData(data.games || {});
+      if (!selectedDay && data.config?.currentDay) {
+        setSelectedDay(data.config.currentDay);
+      }
+      if (!processDay && data.config?.currentDay) {
+        setProcessDay(data.config.currentDay);
+      }
+      setLoading(false);
+      setLoadError(null);
+    } catch (err) {
+      setLoadError('Failed to load pool data. Please refresh.');
+      setLoading(false);
+    }
+  }, [adminAuthed, adminPassword]);
+
+  useEffect(() => {
+    fetchState();
+    const interval = setInterval(fetchState, 30000);
+    return () => clearInterval(interval);
+  }, [fetchState]);
 
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
+
+  // ── Admin auth helper ──
+  const adminHeaders = () => ({
+    'Content-Type': 'application/json',
+    'X-Admin-Password': adminPassword,
+  });
+
+  const handleAdminLogin = async () => {
+    setAdminLoginErr('');
+    try {
+      const resp = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword }),
+      });
+      if (resp.ok) {
+        setAdminAuthed(true);
+        setShowAdminLogin(false);
+        setActiveTab('admin');
+        fetchState();
+      } else {
+        setAdminLoginErr('Invalid password.');
+      }
+    } catch { setAdminLoginErr('Connection error.'); }
+  };
+
+  const handleAdminLogout = () => {
+    setAdminAuthed(false);
+    setAdminPassword('');
+    setActiveTab('standings');
+    fetchState();
+  };
 
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
@@ -608,26 +598,148 @@ function App() {
   const addPickSlot = () => setTeamPicks([...teamPicks, '']);
   const removePickSlot = (idx) => setTeamPicks(teamPicks.filter((_,i) => i !== idx));
 
-  const handleSubmitPicks = () => {
+  // ── Submit picks via API ──
+  const handleSubmitPicks = async () => {
     setSubmitErr('');
     if (!pickerName.trim()) { setSubmitErr('Please enter your name.'); return; }
     const filled = teamPicks.filter(t => t.trim());
     if (filled.length === 0) { setSubmitErr('Please select at least one team.'); return; }
-    const dupes = filled.filter((t, i) => filled.indexOf(t) !== i);
-    if (dupes.length > 0) { setSubmitErr(`Duplicate pick: ${dupes[0]}`); return; }
-    if (buybackPlayerId !== null) {
-      setPlayers(prev => prev.map(p =>
-        p.id === buybackPlayerId
-          ? { ...p, status: 'alive', buybacks: p.buybacks + 1, totalSpent: p.totalSpent + 25, needsBuyback: false }
-          : p
-      ));
+
+    const player = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
+    if (!player) { setSubmitErr('Player not found. Check your name.'); return; }
+
+    setSubmitting(true);
+    try {
+      const resp = await fetch('/api/picks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: player.id,
+          day: selectedDay,
+          picks: filled,
+          isBuyback: buybackPlayerId !== null,
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        setSubmitErr(data.error || 'Failed to submit picks.');
+        setSubmitting(false);
+        return;
+      }
+      setSubmitted(true);
+      setSubmitting(false);
+      fetchState();
+    } catch (err) {
+      setSubmitErr('Network error. Please try again.');
+      setSubmitting(false);
     }
-    setSubmitted(true);
   };
 
-  const handleSavePlayer = (updated) => {
-    setPlayers(prev => prev.map(p => p.id === updated.id ? updated : p));
-    setEditingPlayer(null);
+  // ── Save player via API ──
+  const handleSavePlayer = async (updated) => {
+    try {
+      await fetch('/api/admin/player', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify(updated),
+      });
+      setEditingPlayer(null);
+      fetchState();
+    } catch { /* ignore */ }
+  };
+
+  // ── Add player via API ──
+  const handleAddPlayer = async () => {
+    if (!newPlayerName.trim()) return;
+    try {
+      await fetch('/api/admin/player', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ name: newPlayerName.trim() }),
+      });
+      setNewPlayerName('');
+      fetchState();
+    } catch { /* ignore */ }
+  };
+
+  // ── Delete player via API ──
+  const handleDeletePlayer = async (id) => {
+    try {
+      await fetch(`/api/admin/player/${id}`, {
+        method: 'DELETE',
+        headers: adminHeaders(),
+      });
+      fetchState();
+    } catch { /* ignore */ }
+  };
+
+  // ── Toggle site lock ──
+  const handleToggleLock = async () => {
+    try {
+      const newLocked = !(config?.siteLocked);
+      await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ siteLocked: newLocked }),
+      });
+      fetchState();
+    } catch { /* ignore */ }
+  };
+
+  // ── Update game result via API ──
+  const handleSaveGameResult = async (day, game) => {
+    try {
+      await fetch('/api/admin/game-result', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({
+          day,
+          gameId: game.id,
+          homeScore: game.homeScore,
+          awayScore: game.awayScore,
+          final: game.final,
+          winner: game.winner,
+        }),
+      });
+      setEditingGame(null);
+      fetchState();
+    } catch { /* ignore */ }
+  };
+
+  // ── Add game via API ──
+  const handleAddGame = async (day, game) => {
+    const allGames = { ...gamesData };
+    const dayGames = [...(allGames[day] || [])];
+    dayGames.push(game);
+    try {
+      await fetch('/api/admin/games', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ day, games: dayGames }),
+      });
+      setAddingGame(null);
+      fetchState();
+    } catch { /* ignore */ }
+  };
+
+  // ── Process day via API ──
+  const handleProcessDay = async () => {
+    setProcessing(true);
+    setProcessResult(null);
+    try {
+      const resp = await fetch('/api/admin/process-day', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({ day: processDay }),
+      });
+      const data = await resp.json();
+      setProcessResult(data);
+      setProcessing(false);
+      fetchState();
+    } catch {
+      setProcessResult({ error: 'Failed to process day.' });
+      setProcessing(false);
+    }
   };
 
   const TABS = [
@@ -636,12 +748,93 @@ function App() {
     {id:'picks',     label:'Submit Picks'},
     {id:'rules',     label:'Rules'},
   ];
-  if (isAdmin) TABS.push({id:'admin', label:'Admin'});
+  if (adminAuthed) TABS.push({id:'admin', label:'Admin'});
 
   const totalPot = players.reduce((s, p) => s + p.totalSpent, 0);
 
+  /* ── Loading screen ── */
+  if (loading) {
+    return (
+      <div style={{minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div style={{textAlign:'center'}}>
+          <Basketball size={80} spin={true} glow={true} />
+          <div className="anton" style={{fontSize:20, color:'var(--cream)', marginTop:20, letterSpacing:'0.04em'}}>
+            LOADING POOL DATA...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Error screen ── */
+  if (loadError) {
+    return (
+      <div style={{minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div className="card" style={{maxWidth:440, padding:'40px 32px', textAlign:'center'}}>
+          <div className="anton" style={{fontSize:24, color:'var(--danger)', marginTop:8}}>CONNECTION ERROR</div>
+          <div style={{color:'var(--muted)', marginTop:12, lineHeight:1.6}}>{loadError}</div>
+          <button className="btn btn-primary" style={{marginTop:20}} onClick={() => { setLoading(true); setLoadError(null); fetchState(); }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Site locked screen (non-admin) ── */
+  if (siteLocked && !adminAuthed) {
+    return (
+      <div style={{minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div className="card" style={{maxWidth:440, padding:'40px 32px', textAlign:'center'}}>
+          <Basketball size={72} bounce={true} glow={true} />
+          <div className="anton" style={{fontSize:24, color:'var(--gold)', marginTop:20, letterSpacing:'0.04em'}}>
+            POOL MAINTENANCE
+          </div>
+          <div style={{color:'var(--muted)', marginTop:12, lineHeight:1.6}}>{lockMessage}</div>
+          <button className="btn btn-ghost" style={{marginTop:20}} onClick={() => setShowAdminLogin(true)}>
+            Admin Login
+          </button>
+          {showAdminLogin && (
+            <div style={{marginTop:16}}>
+              <input className="form-input" type="password" placeholder="Admin password"
+                     value={adminPassword} onChange={e => setAdminPassword(e.target.value)}
+                     onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+                     style={{marginBottom:8}} />
+              {adminLoginErr && <div style={{color:'var(--danger)', fontSize:13, marginBottom:8}}>{adminLoginErr}</div>}
+              <button className="btn btn-primary" style={{width:'100%', justifyContent:'center'}} onClick={handleAdminLogin}>
+                Login
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{minHeight:'100vh', background:'var(--bg)'}}>
+
+      {/* Admin Login Modal */}
+      {showAdminLogin && !adminAuthed && (
+        <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16, backdropFilter:'blur(4px)'}}>
+          <div className="card" style={{width:'100%', maxWidth:380}}>
+            <div className="card-header">
+              <div className="card-title">Admin Login</div>
+              <button className="btn btn-ghost" style={{padding:'5px 10px'}} onClick={() => { setShowAdminLogin(false); setAdminLoginErr(''); }}>✕</button>
+            </div>
+            <div style={{padding:'20px 22px'}}>
+              <label className="form-label">Password</label>
+              <input className="form-input" type="password" placeholder="Enter admin password"
+                     value={adminPassword} onChange={e => setAdminPassword(e.target.value)}
+                     onKeyDown={e => e.key === 'Enter' && handleAdminLogin()} />
+              {adminLoginErr && <div style={{color:'var(--danger)', fontSize:13, marginTop:8}}>{adminLoginErr}</div>}
+              <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:14}} onClick={handleAdminLogin}>
+                Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Venmo Bar */}
       <div className="venmo-bar">
@@ -650,6 +843,13 @@ function App() {
           Pay Entry Fee via Venmo @Ryan-Keefer-2
         </a>
       </div>
+
+      {/* Site locked banner for admin */}
+      {config?.siteLocked && adminAuthed && (
+        <div style={{background:'rgba(248,113,113,.15)', borderBottom:'1px solid rgba(248,113,113,.3)', padding:'6px 16px', textAlign:'center', fontSize:12, fontWeight:700, color:'var(--danger)', letterSpacing:'0.05em'}}>
+          SITE IS LOCKED — Only you can see the pool right now
+        </div>
+      )}
 
       {/* Header */}
       <header className="site-header">
@@ -674,10 +874,15 @@ function App() {
                 </div>
                 <div style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:4}}>Total Pot</div>
               </div>
-              <div className="toggle-pill">
-                <div className={`toggle-opt ${!isAdmin ? 'active' : ''}`} onClick={() => setIsAdmin(false)}>Player</div>
-                <div className={`toggle-opt ${isAdmin  ? 'active' : ''}`} onClick={() => { setIsAdmin(true); setActiveTab('admin'); }}>Admin</div>
-              </div>
+              {adminAuthed ? (
+                <button className="btn btn-ghost" style={{padding:'6px 14px', fontSize:11}} onClick={handleAdminLogout}>
+                  Logout Admin
+                </button>
+              ) : (
+                <button className="btn btn-ghost" style={{padding:'6px 14px', fontSize:11}} onClick={() => setShowAdminLogin(true)}>
+                  Admin
+                </button>
+              )}
             </div>
           </div>
 
@@ -788,7 +993,7 @@ function App() {
         {/* ── SCORES ── */}
         {activeTab === 'scores' && (
           <div className="anim-up">
-            {Object.entries(GAMES_DATA).map(([day, games]) => (
+            {Object.entries(gamesData).map(([day, games]) => (
               <div key={day} style={{marginBottom:24}}>
                 <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
                   <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>{DAY_FULL[day]}</div>
@@ -938,8 +1143,8 @@ function App() {
                   )}
 
                   <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8}}
-                          onClick={handleSubmitPicks}>
-                    Lock In Picks
+                          onClick={handleSubmitPicks} disabled={submitting}>
+                    {submitting ? 'Submitting...' : 'Lock In Picks'}
                   </button>
                 </div>
 
@@ -1013,7 +1218,7 @@ function App() {
         )}
 
         {/* ── ADMIN ── */}
-        {activeTab === 'admin' && isAdmin && (
+        {activeTab === 'admin' && adminAuthed && (
           <div className="anim-up">
             <div style={{display:'flex', gap:8, marginBottom:20}}>
               {['players','games','process'].map(t => (
@@ -1025,80 +1230,139 @@ function App() {
 
             {/* Admin: Players */}
             {adminTab === 'players' && (
-              <div className="card">
-                <div className="card-header">
-                  <div className="card-title">Player Management</div>
-                  <span className="badge badge-alive">{players.length} players</span>
-                </div>
-                <div style={{overflowX:'auto'}}>
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Player</th><th>Status</th><th>Buybacks</th><th>Spent</th><th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {players.map(p => (
-                        <tr key={p.id}>
-                          <td>
-                            <div style={{display:'flex', alignItems:'center', gap:10}}>
-                              <Avatar name={p.name} size={30} />
-                              <span style={{fontWeight:600}}>{p.name}</span>
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`badge ${p.status==='alive'?'badge-alive':'badge-out'}`}>
-                              {p.status}
-                            </span>
-                          </td>
-                          <td><span className="mono" style={{color:'var(--gold)'}}>{p.buybacks}</span></td>
-                          <td><span className="mono" style={{color:'var(--accent)'}}>${p.totalSpent}</span></td>
-                          <td>
-                            <button className="btn btn-ghost" style={{padding:'5px 12px', fontSize:12}}
-                                    onClick={() => setEditingPlayer(p)}>
-                              Edit
-                            </button>
-                          </td>
+              <div>
+                <div className="card" style={{marginBottom:16}}>
+                  <div className="card-header">
+                    <div className="card-title">Player Management</div>
+                    <span className="badge badge-alive">{players.length} players</span>
+                  </div>
+                  <div style={{overflowX:'auto'}}>
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Player</th><th>Status</th><th>Buybacks</th><th>Spent</th><th>Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {players.map(p => (
+                          <tr key={p.id}>
+                            <td>
+                              <div style={{display:'flex', alignItems:'center', gap:10}}>
+                                <Avatar name={p.name} size={30} />
+                                <span style={{fontWeight:600}}>{p.name}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`badge ${p.status==='alive'?'badge-alive':'badge-out'}`}>
+                                {p.status}
+                              </span>
+                            </td>
+                            <td><span className="mono" style={{color:'var(--gold)'}}>{p.buybacks}</span></td>
+                            <td><span className="mono" style={{color:'var(--accent)'}}>${p.totalSpent}</span></td>
+                            <td>
+                              <div style={{display:'flex', gap:6}}>
+                                <button className="btn btn-ghost" style={{padding:'5px 12px', fontSize:12}}
+                                        onClick={() => setEditingPlayer({...p})}>Edit</button>
+                                <button className="btn btn-ghost" style={{padding:'5px 12px', fontSize:12, color:'var(--danger)'}}
+                                        onClick={() => handleDeletePlayer(p.id)}>Remove</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                {/* Add Player */}
+                <div className="card" style={{padding:'18px 22px'}}>
+                  <div className="card-title" style={{marginBottom:12}}>Add Player</div>
+                  <div style={{display:'flex', gap:10}}>
+                    <input className="form-input" placeholder="Player name" value={newPlayerName}
+                           onChange={e => setNewPlayerName(e.target.value)}
+                           onKeyDown={e => e.key === 'Enter' && handleAddPlayer()} />
+                    <button className="btn btn-primary" style={{flexShrink:0}} onClick={handleAddPlayer}>Add</button>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Admin: Games */}
             {adminTab === 'games' && (
-              <div className="card">
-                <div className="card-header">
-                  <div className="card-title">Game Results</div>
+              <div>
+                <div className="card" style={{marginBottom:16}}>
+                  <div className="card-header">
+                    <div className="card-title">Game Results</div>
+                  </div>
+                  <div style={{overflowX:'auto'}}>
+                    <table className="admin-table">
+                      <thead>
+                        <tr><th>Day</th><th>Matchup</th><th>Score</th><th>Winner</th><th>Actions</th></tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(gamesData).flatMap(([day, games]) =>
+                          games.map(g => (
+                            <tr key={g.id}>
+                              <td><span className="mono" style={{fontSize:12, color:'var(--muted)'}}>{DAY_LABELS[day]}</span></td>
+                              <td style={{whiteSpace:'nowrap'}}>{g.home} vs {g.away}</td>
+                              <td>
+                                {g.final
+                                  ? <span className="mono">{g.homeScore}–{g.awayScore}</span>
+                                  : <span className="badge badge-pending" style={{fontSize:10}}>TBD</span>}
+                              </td>
+                              <td>
+                                {g.winner
+                                  ? <span className="badge badge-win">{g.winner}</span>
+                                  : <span style={{color:'var(--dim)'}}>—</span>}
+                              </td>
+                              <td>
+                                <button className="btn btn-ghost" style={{padding:'5px 12px', fontSize:12}}
+                                        onClick={() => setEditingGame({...g, _day: day})}>Edit</button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div style={{overflowX:'auto'}}>
-                  <table className="admin-table">
-                    <thead>
-                      <tr><th>Day</th><th>Matchup</th><th>Score</th><th>Winner</th></tr>
-                    </thead>
-                    <tbody>
-                      {Object.entries(GAMES_DATA).flatMap(([day, games]) =>
-                        games.map(g => (
-                          <tr key={g.id}>
-                            <td><span className="mono" style={{fontSize:12, color:'var(--muted)'}}>{DAY_LABELS[day]}</span></td>
-                            <td style={{whiteSpace:'nowrap'}}>{g.home} vs {g.away}</td>
-                            <td>
-                              {g.final
-                                ? <span className="mono">{g.homeScore}–{g.awayScore}</span>
-                                : <span className="badge badge-pending" style={{fontSize:10}}>TBD</span>}
-                            </td>
-                            <td>
-                              {g.winner
-                                ? <span className="badge badge-win">{g.winner}</span>
-                                : <span style={{color:'var(--dim)'}}>—</span>}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                {/* Add Game */}
+                <div className="card" style={{padding:'18px 22px'}}>
+                  <div className="card-title" style={{marginBottom:12}}>Add Game</div>
+                  {!addingGame ? (
+                    <button className="btn btn-ghost" style={{width:'100%', justifyContent:'center'}}
+                            onClick={() => setAddingGame({day: CURRENT_DAY, home:'', away:'', id:'g'+Date.now()})}>
+                      + Add New Game
+                    </button>
+                  ) : (
+                    <div style={{display:'grid', gap:10}}>
+                      <div>
+                        <label className="form-label">Day</label>
+                        <select className="form-select" value={addingGame.day}
+                                onChange={e => setAddingGame({...addingGame, day:e.target.value})}>
+                          {DAY_ORDER.map(d => <option key={d} value={d}>{DAY_FULL[d]}</option>)}
+                        </select>
+                      </div>
+                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+                        <div>
+                          <label className="form-label">Home Team</label>
+                          <input className="form-input" placeholder="Home" value={addingGame.home}
+                                 onChange={e => setAddingGame({...addingGame, home:e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="form-label">Away Team</label>
+                          <input className="form-input" placeholder="Away" value={addingGame.away}
+                                 onChange={e => setAddingGame({...addingGame, away:e.target.value})} />
+                        </div>
+                      </div>
+                      <div style={{display:'flex', gap:10}}>
+                        <button className="btn btn-primary" style={{flex:1, justifyContent:'center'}}
+                                onClick={() => handleAddGame(addingGame.day, {id:addingGame.id, home:addingGame.home, away:addingGame.away, homeScore:null, awayScore:null, final:false, winner:null})}>
+                          Add Game
+                        </button>
+                        <button className="btn btn-ghost" onClick={() => setAddingGame(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1106,27 +1370,70 @@ function App() {
             {/* Admin: Process */}
             {adminTab === 'process' && (
               <div>
+                {/* Site Lock */}
+                <div className="card" style={{padding:'22px 24px', marginBottom:16}}>
+                  <div className="card-title" style={{marginBottom:14}}>Site Lock</div>
+                  <div style={{color:'var(--muted)', fontSize:14, lineHeight:1.65, marginBottom:16}}>
+                    Lock the site to prevent players from viewing or submitting picks while you update data.
+                  </div>
+                  <button className={`btn ${config?.siteLocked ? 'btn-primary' : 'btn-ghost'}`}
+                          onClick={handleToggleLock}>
+                    {config?.siteLocked ? 'Unlock Site' : 'Lock Site'}
+                  </button>
+                  {config?.siteLocked && (
+                    <span className="badge badge-out" style={{marginLeft:12}}>SITE LOCKED</span>
+                  )}
+                </div>
+
+                {/* Process Day */}
                 <div className="card" style={{padding:'22px 24px', marginBottom:16}}>
                   <div className="card-title" style={{marginBottom:16}}>End-of-Day Processing</div>
                   <div style={{color:'var(--muted)', fontSize:14, lineHeight:1.65, marginBottom:20}}>
-                    After all games for a day are final, run end-of-day processing to:
+                    After all games for a day are final, run end-of-day processing to
                     update player statuses, mark eliminations, flag buyback needs, and advance to the next round.
                   </div>
                   <div style={{display:'flex', gap:10, marginBottom:20}}>
-                    <select className="form-select" style={{maxWidth:260}}>
+                    <select className="form-select" style={{maxWidth:260}} value={processDay}
+                            onChange={e => setProcessDay(e.target.value)}>
                       {DAY_ORDER.map(d => (
                         <option key={d} value={d}>{DAY_FULL[d]}</option>
                       ))}
                     </select>
-                    <button className="btn btn-primary">Process Day</button>
+                    <button className="btn btn-primary" onClick={handleProcessDay} disabled={processing}>
+                      {processing ? 'Processing...' : 'Process Day'}
+                    </button>
                   </div>
+                  {processResult && (
+                    <div style={{padding:'14px 18px', background: processResult.error ? 'rgba(248,113,113,.08)' : 'rgba(74,222,128,.08)',
+                                 border: `1px solid ${processResult.error ? 'rgba(248,113,113,.2)' : 'rgba(74,222,128,.2)'}`,
+                                 borderRadius:8, fontSize:13, marginBottom:16}}>
+                      {processResult.error ? (
+                        <span style={{color:'var(--danger)'}}>{processResult.error}</span>
+                      ) : (
+                        <div>
+                          <div style={{color:'var(--success)', fontWeight:700, marginBottom:8}}>Day processed successfully</div>
+                          <div style={{color:'var(--muted)'}}>Advanced to: {DAY_FULL[processResult.currentDay] || processResult.currentDay}</div>
+                          {processResult.summary && processResult.summary.map(p => (
+                            <div key={p.id} style={{display:'flex', gap:8, marginTop:4}}>
+                              <span style={{color:'var(--cream)'}}>{p.name}</span>
+                              <span className={`badge ${p.result === 'win' ? 'badge-win' : p.result === 'loss' ? 'badge-loss' : 'badge-pending'}`} style={{fontSize:10}}>
+                                {p.result || 'n/a'}
+                              </span>
+                              <span style={{color:'var(--muted)', fontSize:12}}>{p.status}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div style={{padding:'16px 18px', background:'rgba(255,184,0,.06)',
                                border:'1px solid rgba(255,184,0,.2)', borderRadius:8, fontSize:13}}>
-                    <span style={{color:'var(--gold)', fontWeight:700}}>⚠ Warning: </span>
-                    <span style={{color:'var(--muted)'}}>This action is irreversible. Make sure all scores are entered before processing.</span>
+                    <span style={{color:'var(--gold)', fontWeight:700}}>Warning: </span>
+                    <span style={{color:'var(--muted)'}}>Make sure all scores are entered before processing. Review results carefully.</span>
                   </div>
                 </div>
 
+                {/* Pool Summary */}
                 <div className="card" style={{padding:'22px 24px'}}>
                   <div className="card-title" style={{marginBottom:14}}>Pool Summary</div>
                   <div style={{display:'grid', gap:10}}>
@@ -1165,6 +1472,11 @@ function App() {
                   <div style={{padding:'20px 22px'}}>
                     <div style={{display:'grid', gap:14}}>
                       <div>
+                        <label className="form-label">Name</label>
+                        <input className="form-input" value={editingPlayer.name}
+                               onChange={e => setEditingPlayer({...editingPlayer, name:e.target.value})} />
+                      </div>
+                      <div>
                         <label className="form-label">Status</label>
                         <select className="form-select"
                                 value={editingPlayer.status}
@@ -1185,11 +1497,79 @@ function App() {
                                value={editingPlayer.totalSpent}
                                onChange={e => setEditingPlayer({...editingPlayer, totalSpent:parseInt(e.target.value)||25})} />
                       </div>
+                      <div>
+                        <label className="form-label">Needs Buyback</label>
+                        <select className="form-select"
+                                value={editingPlayer.needsBuyback ? 'true' : 'false'}
+                                onChange={e => setEditingPlayer({...editingPlayer, needsBuyback: e.target.value === 'true'})}>
+                          <option value="false">No</option>
+                          <option value="true">Yes</option>
+                        </select>
+                      </div>
                     </div>
                     <div style={{display:'flex', gap:10, marginTop:20}}>
                       <button className="btn btn-primary" style={{flex:1, justifyContent:'center'}}
                               onClick={() => handleSavePlayer(editingPlayer)}>Save Changes</button>
                       <button className="btn btn-ghost" onClick={() => setEditingPlayer(null)}>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Game Modal */}
+            {editingGame && (
+              <div style={{
+                position:'fixed', inset:0, background:'rgba(0,0,0,.75)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                zIndex:1000, padding:16, backdropFilter:'blur(4px)'
+              }}>
+                <div className="card" style={{width:'100%', maxWidth:440}}>
+                  <div className="card-header">
+                    <div className="card-title">{editingGame.home} vs {editingGame.away}</div>
+                    <button className="btn btn-ghost" style={{padding:'5px 10px'}}
+                            onClick={() => setEditingGame(null)}>✕</button>
+                  </div>
+                  <div style={{padding:'20px 22px'}}>
+                    <div style={{display:'grid', gap:14}}>
+                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+                        <div>
+                          <label className="form-label">{editingGame.home} Score</label>
+                          <input type="number" className="form-input"
+                                 value={editingGame.homeScore ?? ''}
+                                 onChange={e => setEditingGame({...editingGame, homeScore: e.target.value === '' ? null : parseInt(e.target.value)})} />
+                        </div>
+                        <div>
+                          <label className="form-label">{editingGame.away} Score</label>
+                          <input type="number" className="form-input"
+                                 value={editingGame.awayScore ?? ''}
+                                 onChange={e => setEditingGame({...editingGame, awayScore: e.target.value === '' ? null : parseInt(e.target.value)})} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="form-label">Winner</label>
+                        <select className="form-select"
+                                value={editingGame.winner || ''}
+                                onChange={e => setEditingGame({...editingGame, winner: e.target.value || null})}>
+                          <option value="">TBD</option>
+                          <option value={editingGame.home}>{editingGame.home}</option>
+                          <option value={editingGame.away}>{editingGame.away}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="form-label">Final</label>
+                        <select className="form-select"
+                                value={editingGame.final ? 'true' : 'false'}
+                                onChange={e => setEditingGame({...editingGame, final: e.target.value === 'true'})}>
+                          <option value="false">No (In Progress / TBD)</option>
+                          <option value="true">Yes (Final)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{display:'flex', gap:10, marginTop:20}}>
+                      <button className="btn btn-primary" style={{flex:1, justifyContent:'center'}}
+                              onClick={() => handleSaveGameResult(editingGame._day, editingGame)}>Save Result</button>
+                      <button className="btn btn-ghost" onClick={() => setEditingGame(null)}>Cancel</button>
                     </div>
                   </div>
                 </div>

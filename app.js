@@ -1,9 +1,7 @@
-import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -101,17 +99,17 @@ app.post('/api/picks', (req, res) => {
   const usedTeams = Object.values(player.picks).flat();
   const reused = picks.filter(t => usedTeams.includes(t));
   if (reused.length > 0) {
-    return res.status(400).json({ error: `Team already used: ${reused[0]}` });
+    return res.status(400).json({ error: 'Team already used: ' + reused[0] });
   }
 
   const invalidTeams = picks.filter(t => !config.teams.includes(t));
   if (invalidTeams.length > 0) {
-    return res.status(400).json({ error: `Invalid team: ${invalidTeams[0]}` });
+    return res.status(400).json({ error: 'Invalid team: ' + invalidTeams[0] });
   }
 
   const requiredPicks = getRequiredPicks(player, day);
   if (picks.length !== requiredPicks) {
-    return res.status(400).json({ error: `Exactly ${requiredPicks} pick(s) required for this day.` });
+    return res.status(400).json({ error: 'Exactly ' + requiredPicks + ' pick(s) required for this day.' });
   }
 
   if (isBuyback) {
@@ -131,7 +129,7 @@ app.post('/api/picks', (req, res) => {
   player.results[day] = 'pending';
 
   writeJSON(PLAYERS_PATH, players);
-  res.json({ ok: true, player });
+  res.json({ ok: true, player: player });
 });
 
 /* ── POST /api/admin/auth ── */
@@ -152,7 +150,8 @@ app.post('/api/admin/config', (req, res) => {
   Object.assign(config, updates);
 
   writeJSON(CONFIG_PATH, config);
-  const { adminPassword: _, ...safeConfig } = config;
+  const safeConfig = Object.assign({}, config);
+  delete safeConfig.adminPassword;
   res.json({ ok: true, config: safeConfig });
 });
 
@@ -165,11 +164,11 @@ app.post('/api/admin/player', (req, res) => {
 
   if (body.id && players.find(p => p.id === body.id)) {
     const idx = players.findIndex(p => p.id === body.id);
-    players[idx] = { ...players[idx], ...body };
+    players[idx] = Object.assign({}, players[idx], body);
     writeJSON(PLAYERS_PATH, players);
     return res.json({ ok: true, player: players[idx] });
   } else {
-    const maxId = players.length > 0 ? Math.max(...players.map(p => p.id)) : 0;
+    const maxId = players.length > 0 ? Math.max.apply(null, players.map(p => p.id)) : 0;
     const newPlayer = {
       id: maxId + 1,
       name: body.name || 'New Player',
@@ -221,7 +220,8 @@ app.post('/api/admin/games', (req, res) => {
 app.post('/api/admin/game-result', (req, res) => {
   if (!isAdminAuthed(req)) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { day, gameId, homeScore, awayScore, final: isFinal, winner } = req.body;
+  const { day, gameId, homeScore, awayScore, winner } = req.body;
+  const isFinal = req.body.final;
   if (!day || !gameId) {
     return res.status(400).json({ error: 'Provide day and gameId.' });
   }
@@ -243,7 +243,7 @@ app.post('/api/admin/game-result', (req, res) => {
   if (winner !== undefined)    game.winner = winner;
 
   writeJSON(GAMES_PATH, allGames);
-  res.json({ ok: true, game });
+  res.json({ ok: true, game: game });
 });
 
 /* ── POST /api/admin/process-day ── */
@@ -261,18 +261,19 @@ app.post('/api/admin/process-day', (req, res) => {
   const dayGames = allGames[day] || [];
 
   const dayWinners = new Set();
-  for (const game of dayGames) {
-    if (game.final && game.winner) {
-      dayWinners.add(game.winner);
+  for (var i = 0; i < dayGames.length; i++) {
+    if (dayGames[i].final && dayGames[i].winner) {
+      dayWinners.add(dayGames[i].winner);
     }
   }
 
-  for (const player of players) {
+  for (var j = 0; j < players.length; j++) {
+    var player = players[j];
     if (player.status !== 'alive') continue;
-    const playerPicks = player.picks[day];
+    var playerPicks = player.picks[day];
     if (!playerPicks || playerPicks.length === 0) continue;
 
-    const allWon = playerPicks.every(team => dayWinners.has(team));
+    var allWon = playerPicks.every(function(team) { return dayWinners.has(team); });
 
     if (allWon) {
       player.results[day] = 'win';
@@ -288,7 +289,7 @@ app.post('/api/admin/process-day', (req, res) => {
     }
   }
 
-  const dayIdx = DAY_ORDER.indexOf(day);
+  var dayIdx = DAY_ORDER.indexOf(day);
   if (dayIdx >= 0 && dayIdx < DAY_ORDER.length - 1) {
     config.currentDay = DAY_ORDER[dayIdx + 1];
   }
@@ -299,7 +300,7 @@ app.post('/api/admin/process-day', (req, res) => {
   res.json({
     ok: true,
     currentDay: config.currentDay,
-    summary: players.map(p => ({ id: p.id, name: p.name, status: p.status, result: p.results[day] || null }))
+    summary: players.map(function(p) { return { id: p.id, name: p.name, status: p.status, result: p.results[day] || null }; })
   });
 });
 
@@ -314,7 +315,7 @@ app.use(express.static(__dirname, {
 /* ══════════════════════════════
    Start Server
 ══════════════════════════════ */
-app.listen(PORT, () => {
-  console.log(`Serving at http://localhost:${PORT}`);
-  console.log(`Data directory: ${DATA_DIR}`);
+app.listen(PORT, function() {
+  console.log('Serving at http://localhost:' + PORT);
+  console.log('Data directory: ' + DATA_DIR);
 });

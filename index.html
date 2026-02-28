@@ -585,6 +585,8 @@ function App() {
   ];
 
   const totalPot = players.reduce((s, p) => s + p.totalSpent, 0);
+  const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
+  const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
   /* ── Loading screen ── */
   if (loading) {

@@ -404,15 +404,6 @@ const DAY_FULL = {
   saturday_ff:'Saturday — Final Four', monday_champ:'Monday — Championship'
 };
 
-const TEAMS = [
-  'Alabama State','Arkansas','Auburn','BYU','Clemson','Creighton','Drake',
-  'Georgia','Gonzaga','High Point','Houston','Kansas','Louisville',
-  'McNeese State','Michigan','Missouri','Montana','Omaha','Purdue',
-  'SIU Edwardsville','St. John\'s','Tennessee','Texas A&M','Texas Tech',
-  'UC San Diego','UCLA','UNC Wilmington','Utah State','VCU',
-  'Wisconsin','Wofford','Yale'
-];
-
 const RULES_DATA = [
   {
     id:'r1', day:`Thursday R1`, color:'orange',
@@ -446,78 +437,21 @@ const RULES_DATA = [
   },
 ];
 
-const INITIAL_PLAYERS = [];
-
-const GAMES_DATA = {
-  thursday_r1: [
-    { id: 1, home: 'Houston', away: 'SIU Edwardsville', homeScore: 78, awayScore: 40, winner: 'Houston', final: true },
-    { id: 2, home: 'Auburn', away: 'Alabama State', homeScore: 83, awayScore: 63, winner: 'Auburn', final: true },
-    { id: 3, home: "St. John's", away: 'Omaha', homeScore: 83, awayScore: 53, winner: "St. John's", final: true },
-    { id: 4, home: 'Tennessee', away: 'Wofford', homeScore: 77, awayScore: 62, winner: 'Tennessee', final: true },
-    { id: 5, home: 'Wisconsin', away: 'Montana', homeScore: 85, awayScore: 66, winner: 'Wisconsin', final: true },
-    { id: 6, home: 'Texas Tech', away: 'UNC Wilmington', homeScore: 82, awayScore: 72, winner: 'Texas Tech', final: true },
-    { id: 7, home: 'Purdue', away: 'High Point', homeScore: 75, awayScore: 63, winner: 'Purdue', final: true },
-    { id: 8, home: 'Texas A&M', away: 'Yale', homeScore: 80, awayScore: 71, winner: 'Texas A&M', final: true },
-    { id: 9, home: 'Michigan', away: 'UC San Diego', homeScore: 68, awayScore: 65, winner: 'Michigan', final: true },
-    { id: 10, home: 'McNeese State', away: 'Clemson', homeScore: 69, awayScore: 67, winner: 'McNeese State', final: true },
-    { id: 11, home: 'BYU', away: 'VCU', homeScore: 80, awayScore: 71, winner: 'BYU', final: true },
-    { id: 12, home: 'Drake', away: 'Missouri', homeScore: 67, awayScore: 57, winner: 'Drake', final: true },
-    { id: 13, home: 'UCLA', away: 'Utah State', homeScore: 72, awayScore: 47, winner: 'UCLA', final: true },
-    { id: 14, home: 'Arkansas', away: 'Kansas', homeScore: 79, awayScore: 72, winner: 'Arkansas', final: true },
-    { id: 15, home: 'Gonzaga', away: 'Georgia', homeScore: 89, awayScore: 68, winner: 'Gonzaga', final: true },
-    { id: 16, home: 'Creighton', away: 'Louisville', homeScore: 89, awayScore: 75, winner: 'Creighton', final: true },
-  ]
-};
-
-// Compute winners from game results
-const THURSDAY_WINNERS = new Set();
-if (GAMES_DATA.thursday_r1) {
-  GAMES_DATA.thursday_r1.forEach(g => { if (g.final && g.winner) THURSDAY_WINNERS.add(g.winner); });
-}
-
-const CURRENT_DAY = 'thursday_r1';
-const BUYBACK_DAYS = ['friday_r1', 'saturday_r2', 'sunday_r2'];
 
 /* ────────────────────────────────
    MAIN APP
 ──────────────────────────────── */
 function App() {
-  const [activeTab, setActiveTab]   = useState('standings');
-  const [players,   setPlayers]     = useState(INITIAL_PLAYERS);
-  const [entriesClosed, setEntriesClosed] = useState(false);
-  const [showAdminPrompt, setShowAdminPrompt] = useState(false);
-  const [adminPin, setAdminPin] = useState('');
-  const [adminErr, setAdminErr] = useState('');
+  const [activeTab, setActiveTab] = useState('standings');
 
-  const ADMIN_PIN = '2025';
-
-  const handleAdminToggle = () => {
-    if (entriesClosed) {
-      // Re-open entries (no pin needed to reopen)
-      setEntriesClosed(false);
-      setShowAdminPrompt(false);
-      setAdminPin('');
-      setAdminErr('');
-    } else {
-      setShowAdminPrompt(true);
-      setAdminPin('');
-      setAdminErr('');
-    }
-  };
-
-  const handleAdminSubmit = () => {
-    if (adminPin === ADMIN_PIN) {
-      setEntriesClosed(true);
-      setShowAdminPrompt(false);
-      setAdminPin('');
-      setAdminErr('');
-    } else {
-      setAdminErr('Incorrect PIN');
-    }
-  };
-
-  const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
-  const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
+  // ── Data from API ──
+  const [loading, setLoading]       = useState(true);
+  const [loadError, setLoadError]   = useState(null);
+  const [siteLocked, setSiteLocked] = useState(false);
+  const [lockMessage, setLockMessage] = useState('');
+  const [config, setConfig]         = useState(null);
+  const [players, setPlayers]       = useState([]);
+  const [gamesData, setGamesData]   = useState({});
 
   // ── Admin Auth State ──
   const [adminAuthed, setAdminAuthed] = useState(false);
@@ -531,6 +465,42 @@ function App() {
   const [teamPick2,       setTeamPick2]       = useState('');
   const [submitted,       setSubmitted]       = useState(false);
   const [submitErr,       setSubmitErr]       = useState('');
+  const [submitting,      setSubmitting]      = useState(false);
+
+  // ── Derived values from config ──
+  const CURRENT_DAY = config?.currentDay || 'thursday_r1';
+  const BUYBACK_DAYS = config?.buybackDays || [];
+  const TEAMS = config?.teams || [];
+
+  // ── Fetch state from API ──
+  const fetchState = async () => {
+    try {
+      const headers = adminAuthed ? { 'X-Admin-Password': adminPassword } : {};
+      const resp = await fetch('/api/state', { headers });
+      const data = await resp.json();
+      if (data.siteLocked) {
+        setSiteLocked(true);
+        setLockMessage(data.lockMessage || 'Pool is under maintenance.');
+        setLoading(false);
+        return;
+      }
+      setSiteLocked(false);
+      setConfig(data.config);
+      setPlayers(data.players || []);
+      setGamesData(data.games || {});
+      setLoadError(null);
+    } catch (err) {
+      setLoadError('Could not connect to server. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  // ── Initial fetch + 30s auto-refresh ──
+  useEffect(() => {
+    fetchState();
+    const interval = setInterval(fetchState, 30000);
+    return () => clearInterval(interval);
+  }, [adminAuthed, adminPassword]);
 
 
   // ── Admin auth helper ──
@@ -574,37 +544,36 @@ function App() {
     setTeamPick2('');
   }, []);
 
-  const handleSubmitPicks = () => {
+  const handleSubmitPicks = async () => {
     setSubmitErr('');
     if (!pickerName.trim()) { setSubmitErr('Please enter your name.'); return; }
     if (!teamPick1) { setSubmitErr('Please select your first team.'); return; }
     if (!teamPick2) { setSubmitErr('Please select your second team.'); return; }
     if (teamPick1 === teamPick2) { setSubmitErr('You must pick two different teams.'); return; }
-    // Check if name already submitted
-    const existing = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
-    if (existing) { setSubmitErr('That name has already been submitted. Use a different name or contact the pool admin.'); return; }
-    // Evaluate picks against game results
-    let result = 'pending';
-    let status = 'alive';
-    if (THURSDAY_WINNERS.size > 0) {
-      const pick1Won = THURSDAY_WINNERS.has(teamPick1);
-      const pick2Won = THURSDAY_WINNERS.has(teamPick2);
-      if (pick1Won && pick2Won) { result = 'win'; }
-      else { result = 'loss'; status = 'eliminated'; }
+
+    // Find existing player by name
+    const player = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
+    if (!player) { setSubmitErr('Name not found. Contact the pool admin to be added.'); return; }
+
+    setSubmitting(true);
+    try {
+      const picks = [teamPick1, teamPick2];
+      const resp = await fetch('/api/picks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: player.id, day: CURRENT_DAY, picks }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        setSubmitErr(data.error || 'Failed to submit picks.');
+      } else {
+        setSubmitted(true);
+        fetchState();
+      }
+    } catch {
+      setSubmitErr('Connection error. Please try again.');
     }
-    // Create new player entry
-    const newPlayer = {
-      id: Date.now(),
-      name: pickerName.trim(),
-      status: status,
-      buybacks: 0,
-      needsBuyback: false,
-      totalSpent: 25,
-      picks: { thursday_r1: [teamPick1, teamPick2] },
-      results: { thursday_r1: result }
-    };
-    setPlayers(prev => [...prev, newPlayer]);
-    setSubmitted(true);
+    setSubmitting(false);
   };
 
   const TABS = [
@@ -612,6 +581,7 @@ function App() {
     {id:'scores',    label:'Scores'},
     {id:'picks',     label:'Submit Picks'},
     {id:'rules',     label:'Rules'},
+    ...(adminAuthed ? [{id:'admin', label:'Admin'}] : []),
   ];
 
   const totalPot = players.reduce((s, p) => s + p.totalSpent, 0);
@@ -738,20 +708,23 @@ function App() {
                 </div>
                 <div style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:4}}>Total Pot</div>
               </div>
-              <button onClick={handleAdminToggle}
-                      title={entriesClosed ? 'Entries closed — click to reopen' : 'Click to close entries'}
-                      style={{
-                        background:'none', border:'none', cursor:'pointer', padding:4,
-                        color: entriesClosed ? 'var(--danger)' : 'var(--muted)',
-                        fontSize:18, lineHeight:1,
-                        opacity: 0.7,
-                        transition: 'opacity .2s, color .2s',
-                      }}
-                      onMouseOver={e => e.currentTarget.style.opacity = 1}
-                      onMouseOut={e => e.currentTarget.style.opacity = 0.7}
-              >
-                {entriesClosed ? '🔒' : '🔓'}
-              </button>
+              {adminAuthed ? (
+                <button onClick={handleAdminLogout}
+                        title="Logout admin"
+                        style={{ background:'none', border:'none', cursor:'pointer', padding:4, color:'var(--danger)', fontSize:18, lineHeight:1, opacity:0.7, transition:'opacity .2s' }}
+                        onMouseOver={e => e.currentTarget.style.opacity = 1}
+                        onMouseOut={e => e.currentTarget.style.opacity = 0.7}>
+                  🔓
+                </button>
+              ) : (
+                <button onClick={() => setShowAdminLogin(true)}
+                        title="Admin login"
+                        style={{ background:'none', border:'none', cursor:'pointer', padding:4, color:'var(--muted)', fontSize:18, lineHeight:1, opacity:0.7, transition:'opacity .2s' }}
+                        onMouseOver={e => e.currentTarget.style.opacity = 1}
+                        onMouseOut={e => e.currentTarget.style.opacity = 0.7}>
+                  🔒
+                </button>
+              )}
             </div>
           </div>
 
@@ -767,41 +740,6 @@ function App() {
         </div>
       </header>
 
-      {/* Admin PIN Modal */}
-      {showAdminPrompt && (
-        <div style={{
-          position:'fixed', inset:0, zIndex:100,
-          background:'rgba(0,0,0,.7)', backdropFilter:'blur(6px)',
-          display:'flex', alignItems:'center', justifyContent:'center',
-        }} onClick={() => { setShowAdminPrompt(false); setAdminPin(''); setAdminErr(''); }}>
-          <div className="card" style={{padding:'28px 32px', maxWidth:340, width:'90%'}}
-               onClick={e => e.stopPropagation()}>
-            <div className="anton" style={{fontSize:18, color:'var(--cream)', letterSpacing:'0.05em', marginBottom:6}}>
-              CLOSE ENTRIES
-            </div>
-            <div style={{fontSize:13, color:'var(--muted)', marginBottom:18}}>
-              Enter admin PIN to lock entries and reveal all picks.
-            </div>
-            <input className="form-input" type="password" placeholder="Enter PIN"
-                   value={adminPin} onChange={e => setAdminPin(e.target.value)}
-                   onKeyDown={e => e.key === 'Enter' && handleAdminSubmit()}
-                   autoFocus />
-            {adminErr && (
-              <div style={{color:'var(--danger)', fontSize:12, marginTop:8}}>{adminErr}</div>
-            )}
-            <div style={{display:'flex', gap:10, marginTop:16}}>
-              <button className="btn btn-ghost" style={{flex:1, justifyContent:'center'}}
-                      onClick={() => { setShowAdminPrompt(false); setAdminPin(''); setAdminErr(''); }}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" style={{flex:1, justifyContent:'center'}}
-                      onClick={handleAdminSubmit}>
-                Lock Entries
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
       <main style={{maxWidth:1100, margin:'0 auto', padding:'28px 16px 60px'}}>
@@ -826,104 +764,71 @@ function App() {
             </div>
 
             {/* Entries */}
-            {players.length === 0 ? (
-              <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
-                <div className="card-header">
-                  <div className="card-title">Entries</div>
-                  <span className="badge badge-alive">0 entered</span>
-                </div>
-                <div style={{padding:'40px 22px', textAlign:'center'}}>
-                  <Basketball size={48} bounce={true} glow={true} />
-                  <div style={{color:'var(--muted)', marginTop:16, fontSize:14}}>No entries yet. Be the first to submit your picks!</div>
-                  <button className="btn btn-primary" style={{marginTop:16}} onClick={() => handleTabChange('picks')}>
-                    Submit Picks
-                  </button>
-                </div>
+            {/* Still In It */}
+            <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
+              <div className="card-header">
+                <div className="card-title" style={{color:'var(--success)'}}>Still In It</div>
+                <span className="badge badge-alive">{alivePlayers.length}</span>
               </div>
-            ) : !entriesClosed ? (
-              <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
-                <div className="card-header">
-                  <div className="card-title">Entries</div>
-                  <div style={{display:'flex', alignItems:'center', gap:8}}>
-                    <span className="badge badge-alive">{players.length} entered</span>
-                    <span className="badge badge-pending" style={{fontSize:10}}>Picks Hidden</span>
-                  </div>
+              {alivePlayers.length === 0 ? (
+                <div style={{padding:'24px 22px', textAlign:'center', color:'var(--muted)', fontSize:13}}>
+                  No players alive yet. Submit your picks to join!
                 </div>
-                <div style={{padding:'32px 22px', textAlign:'center'}}>
-                  <div style={{fontSize:40, marginBottom:12}}>🔒</div>
-                  <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>
-                    {players.length} {players.length === 1 ? 'ENTRY' : 'ENTRIES'} RECEIVED
-                  </div>
-                  <div style={{color:'var(--muted)', marginTop:8, fontSize:13, maxWidth:340, margin:'8px auto 0'}}>
-                    Picks will be revealed once the administrator closes entries. Submit your picks before it's too late!
-                  </div>
-                  <button className="btn btn-primary" style={{marginTop:18}} onClick={() => handleTabChange('picks')}>
-                    Submit Picks
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                {/* Still In It */}
-                <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
-                  <div className="card-header">
-                    <div className="card-title" style={{color:'var(--success)'}}>Still In It</div>
-                    <div style={{display:'flex', alignItems:'center', gap:8}}>
-                      <span className="badge badge-alive">{alivePlayers.length}</span>
-                      <span className="badge badge-out" style={{fontSize:10}}>Entries Locked</span>
-                    </div>
-                  </div>
-                  {alivePlayers.length === 0 ? (
-                    <div style={{padding:'24px 22px', textAlign:'center', color:'var(--muted)', fontSize:13}}>
-                      No one survived Thursday!
-                    </div>
-                  ) : (
-                    [...alivePlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
-                      <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`}}>
-                        <Avatar name={p.name} size={34} />
-                        <div style={{flex:1}}>
-                          <div style={{display:'flex', alignItems:'center', gap:8}}>
-                            <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
-                            <span className="badge badge-alive" style={{fontSize:9}}>ALIVE</span>
-                          </div>
-                          <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>$25 entry</div>
-                        </div>
-                        <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                          {p.picks.thursday_r1 && p.picks.thursday_r1.map(t => (
-                            <span key={t} className={`badge ${THURSDAY_WINNERS.has(t) ? 'badge-win' : 'badge-loss'}`} style={{fontSize:10}}>{t}</span>
-                          ))}
-                        </div>
+              ) : (
+                [...alivePlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
+                  <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`}}>
+                    <Avatar name={p.name} size={34} />
+                    <div style={{flex:1}}>
+                      <div style={{display:'flex', alignItems:'center', gap:8}}>
+                        <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
+                        <span className="badge badge-alive" style={{fontSize:9}}>ALIVE</span>
+                        {p.buybacks > 0 && <span className="badge badge-buyback" style={{fontSize:9}}>{p.buybacks}x BB</span>}
                       </div>
-                    ))
-                  )}
-                </div>
+                      <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>${p.totalSpent} spent</div>
+                    </div>
+                    <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
+                      {Object.entries(p.picks).map(([day, picks]) =>
+                        picks.map(t => {
+                          const result = p.results[day];
+                          const cls = result === 'win' ? 'badge-win' : result === 'loss' ? 'badge-loss' : 'badge-pending';
+                          return <span key={`${day}-${t}`} className={`badge ${cls}`} style={{fontSize:10}}>{t}</span>;
+                        })
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
 
-                {/* Eliminated */}
-                {eliminatedPlayers.length > 0 && (
-                  <div className="card anim-up anim-up-3" style={{marginBottom:20}}>
-                    <div className="card-header">
-                      <div className="card-title" style={{color:'var(--danger)'}}>Eliminated</div>
-                      <span className="badge badge-out">{eliminatedPlayers.length}</span>
-                    </div>
-                    {[...eliminatedPlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
-                      <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`, opacity:0.7}}>
-                        <Avatar name={p.name} size={34} />
-                        <div style={{flex:1}}>
-                          <div style={{display:'flex', alignItems:'center', gap:8}}>
-                            <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
-                            <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
-                          </div>
-                          <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>$25 entry</div>
-                        </div>
-                        <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                          {p.picks.thursday_r1 && p.picks.thursday_r1.map(t => (
-                            <span key={t} className={`badge ${THURSDAY_WINNERS.has(t) ? 'badge-win' : 'badge-loss'}`} style={{fontSize:10}}>{t}</span>
-                          ))}
-                        </div>
+            {/* Eliminated */}
+            {eliminatedPlayers.length > 0 && (
+              <div className="card anim-up anim-up-3" style={{marginBottom:20}}>
+                <div className="card-header">
+                  <div className="card-title" style={{color:'var(--danger)'}}>Eliminated</div>
+                  <span className="badge badge-out">{eliminatedPlayers.length}</span>
+                </div>
+                {[...eliminatedPlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
+                  <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`, opacity:0.7}}>
+                    <Avatar name={p.name} size={34} />
+                    <div style={{flex:1}}>
+                      <div style={{display:'flex', alignItems:'center', gap:8}}>
+                        <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
+                        <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
+                        {p.needsBuyback && <span className="badge badge-buyback" style={{fontSize:9}}>CAN BUY BACK</span>}
                       </div>
-                    ))}
+                      <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>${p.totalSpent} spent</div>
+                    </div>
+                    <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
+                      {Object.entries(p.picks).map(([day, picks]) =>
+                        picks.map(t => {
+                          const result = p.results[day];
+                          const cls = result === 'win' ? 'badge-win' : result === 'loss' ? 'badge-loss' : 'badge-pending';
+                          return <span key={`${day}-${t}`} className={`badge ${cls}`} style={{fontSize:10}}>{t}</span>;
+                        })
+                      )}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             )}
           </div>
@@ -932,7 +837,7 @@ function App() {
         {/* ── SCORES ── */}
         {activeTab === 'scores' && (
           <div className="anim-up">
-            {Object.keys(GAMES_DATA).length === 0 ? (
+            {Object.keys(gamesData).length === 0 ? (
               <div className="card" style={{padding:'40px 22px', textAlign:'center'}}>
                 <Basketball size={48} bounce={true} glow={true} />
                 <div className="anton" style={{fontSize:20, color:'var(--cream)', marginTop:16, letterSpacing:'0.04em'}}>
@@ -943,7 +848,7 @@ function App() {
                 </div>
               </div>
             ) : (
-              Object.entries(GAMES_DATA).map(([day, games]) => (
+              Object.entries(gamesData).map(([day, games]) => (
                 <div key={day} style={{marginBottom:24}}>
                   <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
                     <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>{DAY_FULL[day]}</div>
@@ -1005,20 +910,7 @@ function App() {
         {/* ── SUBMIT PICKS ── */}
         {activeTab === 'picks' && (
           <div className="anim-up" style={{maxWidth:560}}>
-            {entriesClosed ? (
-              <div className="card" style={{padding:'40px 32px', textAlign:'center'}}>
-                <div style={{fontSize:48, marginBottom:12}}>🔒</div>
-                <div className="anton" style={{fontSize:24, color:'var(--danger)', letterSpacing:'0.04em'}}>
-                  ENTRIES ARE CLOSED
-                </div>
-                <div style={{color:'var(--muted)', marginTop:10, fontSize:14}}>
-                  Submissions have been locked. Head to Standings to see everyone's picks.
-                </div>
-                <button className="btn btn-primary" style={{marginTop:20}} onClick={() => handleTabChange('standings')}>
-                  View Standings
-                </button>
-              </div>
-            ) : submitted ? (
+            {submitted ? (
               <div className="card" style={{padding:'40px 32px', textAlign:'center'}}>
                 <Basketball size={72} bounce={true} glow={true} className="" />
                 <div className="anton" style={{fontSize:28, color:'var(--success)', marginTop:20, letterSpacing:'0.04em'}}>
@@ -1092,9 +984,9 @@ function App() {
                     </div>
                   )}
 
-                  <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8}}
-                          onClick={handleSubmitPicks}>
-                    Lock In Picks — $25 Entry
+                  <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8, opacity: submitting ? 0.6 : 1}}
+                          onClick={handleSubmitPicks} disabled={submitting}>
+                    {submitting ? 'Submitting...' : 'Lock In Picks'}
                   </button>
                 </div>
 
@@ -1151,6 +1043,94 @@ function App() {
           </div>
         )}
 
+
+        {/* ── ADMIN ── */}
+        {activeTab === 'admin' && adminAuthed && (
+          <div className="anim-up">
+            <div className="anton" style={{fontSize:28, color:'var(--cream)', marginBottom:20, letterSpacing:'0.04em'}}>
+              ADMIN PANEL
+            </div>
+
+            {/* Lock / Unlock Site */}
+            <div className="card" style={{marginBottom:20}}>
+              <div className="card-header">
+                <div className="card-title">Site Lock</div>
+                <span className={`badge ${config?.siteLocked ? 'badge-loss' : 'badge-win'}`}>
+                  {config?.siteLocked ? 'LOCKED' : 'UNLOCKED'}
+                </span>
+              </div>
+              <div style={{padding:'16px 22px'}}>
+                <button className="btn btn-primary" onClick={async () => {
+                  await fetch('/api/admin/config', {
+                    method: 'POST',
+                    headers: adminHeaders(),
+                    body: JSON.stringify({ siteLocked: !config?.siteLocked }),
+                  });
+                  fetchState();
+                }}>
+                  {config?.siteLocked ? 'Unlock Site' : 'Lock Site'}
+                </button>
+              </div>
+            </div>
+
+            {/* Process Day */}
+            <div className="card" style={{marginBottom:20}}>
+              <div className="card-header">
+                <div className="card-title">Process Day Results</div>
+                <span className="badge badge-pending">{DAY_LABELS[CURRENT_DAY]}</span>
+              </div>
+              <div style={{padding:'16px 22px'}}>
+                <div style={{color:'var(--muted)', fontSize:13, marginBottom:12}}>
+                  Evaluate all picks for the current day against game results. This will update player statuses and advance to the next day.
+                </div>
+                <button className="btn btn-primary" onClick={async () => {
+                  const resp = await fetch('/api/admin/process-day', {
+                    method: 'POST',
+                    headers: adminHeaders(),
+                    body: JSON.stringify({ day: CURRENT_DAY }),
+                  });
+                  const data = await resp.json();
+                  if (data.ok) {
+                    alert('Day processed! New day: ' + (data.currentDay || 'done'));
+                  } else {
+                    alert('Error: ' + (data.error || 'Unknown'));
+                  }
+                  fetchState();
+                }}>
+                  Process {DAY_LABELS[CURRENT_DAY]}
+                </button>
+              </div>
+            </div>
+
+            {/* Player List */}
+            <div className="card" style={{marginBottom:20}}>
+              <div className="card-header">
+                <div className="card-title">Players ({players.length})</div>
+              </div>
+              <div style={{overflowX:'auto'}}>
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th><th>Name</th><th>Status</th><th>Buybacks</th><th>Spent</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {players.map(p => (
+                      <tr key={p.id}>
+                        <td>{p.id}</td>
+                        <td>{p.name}</td>
+                        <td><span className={`badge badge-${p.status === 'alive' ? 'alive' : 'out'}`} style={{fontSize:10}}>{p.status}</span></td>
+                        <td>{p.buybacks}</td>
+                        <td>${p.totalSpent}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
 
       </main>
 

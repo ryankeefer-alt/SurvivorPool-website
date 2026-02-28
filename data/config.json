@@ -1,0 +1,15 @@
+{
+  "currentDay": "friday_s16",
+  "buybackDays": ["friday_r1", "saturday_r2", "sunday_r2"],
+  "teams": [
+    "Alabama", "Arizona", "Arkansas", "Auburn", "Baylor", "Connecticut",
+    "Creighton", "Duke", "Florida", "Florida Atlantic", "Gonzaga", "Houston",
+    "Illinois", "Iowa State", "Kansas", "Kentucky", "Marquette",
+    "Michigan State", "Missouri", "Notre Dame", "Ohio State", "Penn State",
+    "Purdue", "San Diego State", "Tennessee", "Texas", "Texas A&M", "UCLA",
+    "USC", "Virginia", "Xavier"
+  ],
+  "siteLocked": false,
+  "lockMessage": "The pool is being updated. Check back shortly.",
+  "adminPassword": "knockout2025"
+}

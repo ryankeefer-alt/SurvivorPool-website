@@ -307,7 +307,7 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useMemo, useCallback } = React;
+const { useState, useMemo, useCallback, useEffect } = React;
 
 /* ────────────────────────────────
    SVG Basketball Component
@@ -519,6 +519,12 @@ function App() {
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
+  // ── Admin Auth State ──
+  const [adminAuthed, setAdminAuthed] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminLoginErr, setAdminLoginErr] = useState('');
+
   // ── Submit Picks State ──
   const [pickerName,      setPickerName]      = useState('');
   const [teamPick1,       setTeamPick1]       = useState('');
@@ -526,6 +532,38 @@ function App() {
   const [submitted,       setSubmitted]       = useState(false);
   const [submitErr,       setSubmitErr]       = useState('');
 
+
+  // ── Admin auth helper ──
+  const adminHeaders = () => ({
+    'Content-Type': 'application/json',
+    'X-Admin-Password': adminPassword,
+  });
+
+  const handleAdminLogin = async () => {
+    setAdminLoginErr('');
+    try {
+      const resp = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword }),
+      });
+      if (resp.ok) {
+        setAdminAuthed(true);
+        setShowAdminLogin(false);
+        setActiveTab('admin');
+        fetchState();
+      } else {
+        setAdminLoginErr('Invalid password.');
+      }
+    } catch { setAdminLoginErr('Connection error.'); }
+  };
+
+  const handleAdminLogout = () => {
+    setAdminAuthed(false);
+    setAdminPassword('');
+    setActiveTab('standings');
+    fetchState();
+  };
 
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
@@ -578,8 +616,89 @@ function App() {
 
   const totalPot = players.reduce((s, p) => s + p.totalSpent, 0);
 
+  /* ── Loading screen ── */
+  if (loading) {
+    return (
+      <div style={{minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div style={{textAlign:'center'}}>
+          <Basketball size={80} spin={true} glow={true} />
+          <div className="anton" style={{fontSize:20, color:'var(--cream)', marginTop:20, letterSpacing:'0.04em'}}>
+            LOADING POOL DATA...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Error screen ── */
+  if (loadError) {
+    return (
+      <div style={{minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div className="card" style={{maxWidth:440, padding:'40px 32px', textAlign:'center'}}>
+          <div className="anton" style={{fontSize:24, color:'var(--danger)', marginTop:8}}>CONNECTION ERROR</div>
+          <div style={{color:'var(--muted)', marginTop:12, lineHeight:1.6}}>{loadError}</div>
+          <button className="btn btn-primary" style={{marginTop:20}} onClick={() => { setLoading(true); setLoadError(null); fetchState(); }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Site locked screen (non-admin) ── */
+  if (siteLocked && !adminAuthed) {
+    return (
+      <div style={{minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div className="card" style={{maxWidth:440, padding:'40px 32px', textAlign:'center'}}>
+          <Basketball size={72} bounce={true} glow={true} />
+          <div className="anton" style={{fontSize:24, color:'var(--gold)', marginTop:20, letterSpacing:'0.04em'}}>
+            POOL MAINTENANCE
+          </div>
+          <div style={{color:'var(--muted)', marginTop:12, lineHeight:1.6}}>{lockMessage}</div>
+          <button className="btn btn-ghost" style={{marginTop:20}} onClick={() => setShowAdminLogin(true)}>
+            Admin Login
+          </button>
+          {showAdminLogin && (
+            <div style={{marginTop:16}}>
+              <input className="form-input" type="password" placeholder="Admin password"
+                     value={adminPassword} onChange={e => setAdminPassword(e.target.value)}
+                     onKeyDown={e => e.key === 'Enter' && handleAdminLogin()}
+                     style={{marginBottom:8}} />
+              {adminLoginErr && <div style={{color:'var(--danger)', fontSize:13, marginBottom:8}}>{adminLoginErr}</div>}
+              <button className="btn btn-primary" style={{width:'100%', justifyContent:'center'}} onClick={handleAdminLogin}>
+                Login
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{minHeight:'100vh', background:'var(--bg)'}}>
+
+      {/* Admin Login Modal */}
+      {showAdminLogin && !adminAuthed && (
+        <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16, backdropFilter:'blur(4px)'}}>
+          <div className="card" style={{width:'100%', maxWidth:380}}>
+            <div className="card-header">
+              <div className="card-title">Admin Login</div>
+              <button className="btn btn-ghost" style={{padding:'5px 10px'}} onClick={() => { setShowAdminLogin(false); setAdminLoginErr(''); }}>✕</button>
+            </div>
+            <div style={{padding:'20px 22px'}}>
+              <label className="form-label">Password</label>
+              <input className="form-input" type="password" placeholder="Enter admin password"
+                     value={adminPassword} onChange={e => setAdminPassword(e.target.value)}
+                     onKeyDown={e => e.key === 'Enter' && handleAdminLogin()} />
+              {adminLoginErr && <div style={{color:'var(--danger)', fontSize:13, marginTop:8}}>{adminLoginErr}</div>}
+              <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:14}} onClick={handleAdminLogin}>
+                Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Venmo Bar */}
       <div className="venmo-bar">
@@ -588,6 +707,13 @@ function App() {
           Pay Entry Fee via Venmo @Ryan-Keefer-2
         </a>
       </div>
+
+      {/* Site locked banner for admin */}
+      {config?.siteLocked && adminAuthed && (
+        <div style={{background:'rgba(248,113,113,.15)', borderBottom:'1px solid rgba(248,113,113,.3)', padding:'6px 16px', textAlign:'center', fontSize:12, fontWeight:700, color:'var(--danger)', letterSpacing:'0.05em'}}>
+          SITE IS LOCKED — Only you can see the pool right now
+        </div>
+      )}
 
       {/* Header */}
       <header className="site-header">

@@ -1,0 +1,64 @@
+{
+  "thursday_r1": [
+    {"id": "g1",  "home": "Duke",        "away": "Vermont",         "homeScore": 85, "awayScore": 61, "final": true,  "winner": "Duke"},
+    {"id": "g2",  "home": "Gonzaga",     "away": "Grand Canyon",    "homeScore": 79, "awayScore": 62, "final": true,  "winner": "Gonzaga"},
+    {"id": "g3",  "home": "Houston",     "away": "Longwood",        "homeScore": 93, "awayScore": 57, "final": true,  "winner": "Houston"},
+    {"id": "g4",  "home": "Kansas",      "away": "Howard",          "homeScore": 96, "awayScore": 68, "final": true,  "winner": "Kansas"},
+    {"id": "g5",  "home": "Connecticut", "away": "Iona",            "homeScore": 87, "awayScore": 63, "final": true,  "winner": "Connecticut"},
+    {"id": "g6",  "home": "Purdue",      "away": "Texas Southern",  "homeScore": 99, "awayScore": 75, "final": true,  "winner": "Purdue"},
+    {"id": "g7",  "home": "Alabama",     "away": "Texas A&M CC",    "homeScore": 96, "awayScore": 75, "final": true,  "winner": "Alabama"},
+    {"id": "g8",  "home": "Baylor",      "away": "UC Santa Barbara","homeScore": 74, "awayScore": 61, "final": true,  "winner": "Baylor"},
+    {"id": "g9",  "home": "Kentucky",    "away": "Providence",      "homeScore": 61, "awayScore": 53, "final": true,  "winner": "Kentucky"},
+    {"id": "g10", "home": "Marquette",   "away": "Vermont",         "homeScore": 78, "awayScore": 61, "final": true,  "winner": "Marquette"},
+    {"id": "g11", "home": "Texas",       "away": "Colgate",         "homeScore": 71, "awayScore": 63, "final": true,  "winner": "Texas"},
+    {"id": "g12", "home": "UCLA",        "away": "NC Central",      "homeScore": 86, "awayScore": 52, "final": true,  "winner": "UCLA"},
+    {"id": "g13", "home": "Auburn",      "away": "Iowa",            "homeScore": 83, "awayScore": 75, "final": true,  "winner": "Auburn"},
+    {"id": "g14", "home": "Creighton",   "away": "NC State",        "homeScore": 72, "awayScore": 69, "final": true,  "winner": "Creighton"},
+    {"id": "g15", "home": "Tennessee",   "away": "Louisiana",       "homeScore": 58, "awayScore": 55, "final": true,  "winner": "Tennessee"},
+    {"id": "g16", "home": "Illinois",    "away": "Arkansas",        "homeScore": 69, "awayScore": 73, "final": false, "winner": "Arkansas"}
+  ],
+  "friday_r1": [
+    {"id": "g17", "home": "Michigan State", "away": "USC",            "homeScore": 72, "awayScore": 62, "final": true,  "winner": "Michigan State"},
+    {"id": "g18", "home": "Arizona",        "away": "Princeton",      "homeScore": 59, "awayScore": 55, "final": true,  "winner": "Arizona"},
+    {"id": "g19", "home": "Purdue",         "away": "Memphis",        "homeScore": 99, "awayScore": 88, "final": true,  "winner": "Purdue"},
+    {"id": "g20", "home": "Duke",           "away": "Oral Roberts",   "homeScore": 74, "awayScore": 65, "final": true,  "winner": "Duke"},
+    {"id": "g21", "home": "Houston",        "away": "Auburn",         "homeScore": 81, "awayScore": 64, "final": true,  "winner": "Houston"},
+    {"id": "g22", "home": "Alabama",        "away": "Maryland",       "homeScore": 73, "awayScore": 51, "final": true,  "winner": "Alabama"},
+    {"id": "g23", "home": "Florida",        "away": "Colorado",       "homeScore": 75, "awayScore": 58, "final": true,  "winner": "Florida"},
+    {"id": "g24", "home": "Iowa State",     "away": "Pittsburgh",     "homeScore": 59, "awayScore": 41, "final": true,  "winner": "Iowa State"},
+    {"id": "g25", "home": "San Diego State","away": "Charleston",     "homeScore": 63, "awayScore": 57, "final": true,  "winner": "San Diego State"},
+    {"id": "g26", "home": "Baylor",         "away": "UC Davis",       "homeScore": 85, "awayScore": 76, "final": true,  "winner": "Baylor"},
+    {"id": "g27", "home": "Tennessee",      "away": "Duke Blue Devils","homeScore": 71, "awayScore": 68, "final": false, "winner": null},
+    {"id": "g28", "home": "Connecticut",    "away": "Saint Mary",     "homeScore": null,"awayScore": null,"final": false, "winner": null}
+  ],
+  "saturday_r2": [
+    {"id": "g29", "home": "Connecticut", "away": "Arkansas",        "homeScore": 82, "awayScore": 68, "final": true,  "winner": "Connecticut"},
+    {"id": "g30", "home": "Duke",        "away": "Tennessee",       "homeScore": 69, "awayScore": 62, "final": true,  "winner": "Duke"},
+    {"id": "g31", "home": "Houston",     "away": "Iowa State",      "homeScore": 77, "awayScore": 71, "final": true,  "winner": "Houston"},
+    {"id": "g32", "home": "Alabama",     "away": "Michigan State",  "homeScore": 71, "awayScore": 51, "final": true,  "winner": "Alabama"},
+    {"id": "g33", "home": "Kansas",      "away": "Arkansas",        "homeScore": 74, "awayScore": 68, "final": true,  "winner": "Kansas"},
+    {"id": "g34", "home": "Purdue",      "away": "Florida Atlantic","homeScore": 79, "awayScore": 67, "final": true,  "winner": "Purdue"},
+    {"id": "g35", "home": "Baylor",      "away": "Creighton",       "homeScore": 70, "awayScore": 73, "final": true,  "winner": "Creighton"},
+    {"id": "g36", "home": "UCLA",        "away": "Illinois",        "homeScore": 68, "awayScore": 55, "final": true,  "winner": "UCLA"}
+  ],
+  "sunday_r2": [
+    {"id": "g37", "home": "Gonzaga",   "away": "UCLA",       "homeScore": 79, "awayScore": 76, "final": true, "winner": "Gonzaga"},
+    {"id": "g38", "home": "Tennessee", "away": "Duke",       "homeScore": 65, "awayScore": 62, "final": true, "winner": "Tennessee"},
+    {"id": "g39", "home": "Texas",     "away": "Penn State", "homeScore": 71, "awayScore": 66, "final": true, "winner": "Texas"},
+    {"id": "g40", "home": "Purdue",    "away": "Memphis",    "homeScore": 91, "awayScore": 80, "final": true, "winner": "Purdue"},
+    {"id": "g41", "home": "Kansas",    "away": "Arkansas",   "homeScore": 72, "awayScore": 68, "final": true, "winner": "Kansas"}
+  ],
+  "thursday_s16": [
+    {"id": "g42", "home": "Purdue",  "away": "Duke",    "homeScore": 72,   "awayScore": 66,   "final": true,  "winner": "Purdue"},
+    {"id": "g43", "home": "Texas",   "away": "Alabama", "homeScore": null,  "awayScore": null,  "final": false, "winner": null},
+    {"id": "g44", "home": "Houston", "away": "Arizona", "homeScore": null,  "awayScore": null,  "final": false, "winner": null}
+  ],
+  "friday_s16": [
+    {"id": "g45", "home": "Connecticut", "away": "Gonzaga",   "homeScore": null, "awayScore": null, "final": false, "winner": null},
+    {"id": "g46", "home": "Alabama",     "away": "Tennessee", "homeScore": null, "awayScore": null, "final": false, "winner": null}
+  ],
+  "saturday_e8": [],
+  "sunday_e8": [],
+  "saturday_ff": [],
+  "monday_champ": []
+}

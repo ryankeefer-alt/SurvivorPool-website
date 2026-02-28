@@ -1,0 +1,166 @@
+[
+  {
+    "id": 1,
+    "name": "Ryan",
+    "status": "alive",
+    "buybacks": 0,
+    "needsBuyback": false,
+    "totalSpent": 25,
+    "picks": {
+      "thursday_r1": ["Duke", "Gonzaga"],
+      "friday_r1": ["Houston", "Kansas"],
+      "saturday_r2": ["Connecticut"],
+      "sunday_r2": ["Alabama"],
+      "thursday_s16": ["Purdue"]
+    },
+    "results": {
+      "thursday_r1": "win",
+      "friday_r1": "win",
+      "saturday_r2": "win",
+      "sunday_r2": "win",
+      "thursday_s16": "win"
+    }
+  },
+  {
+    "id": 2,
+    "name": "Marcus",
+    "status": "alive",
+    "buybacks": 0,
+    "needsBuyback": false,
+    "totalSpent": 25,
+    "picks": {
+      "thursday_r1": ["Baylor", "Kentucky"],
+      "friday_r1": ["Duke", "Tennessee"],
+      "saturday_r2": ["Houston"],
+      "sunday_r2": ["Connecticut"],
+      "friday_s16": ["Alabama"]
+    },
+    "results": {
+      "thursday_r1": "win",
+      "friday_r1": "win",
+      "saturday_r2": "win",
+      "sunday_r2": "win",
+      "friday_s16": "pending"
+    }
+  },
+  {
+    "id": 3,
+    "name": "Priya",
+    "status": "alive",
+    "buybacks": 1,
+    "needsBuyback": false,
+    "totalSpent": 50,
+    "picks": {
+      "thursday_r1": ["Texas", "UCLA"],
+      "friday_r1": ["Baylor", "Purdue", "Kansas", "Michigan State"],
+      "saturday_r2": ["Duke"],
+      "sunday_r2": ["Gonzaga"],
+      "thursday_s16": ["Texas"]
+    },
+    "results": {
+      "thursday_r1": "loss",
+      "friday_r1": "win",
+      "saturday_r2": "win",
+      "sunday_r2": "win",
+      "thursday_s16": "pending"
+    }
+  },
+  {
+    "id": 4,
+    "name": "Dante",
+    "status": "alive",
+    "buybacks": 1,
+    "needsBuyback": false,
+    "totalSpent": 50,
+    "picks": {
+      "thursday_r1": ["Auburn", "Creighton"],
+      "friday_r1": ["Houston", "Alabama", "Florida", "Iowa State"],
+      "saturday_r2": ["Tennessee"],
+      "sunday_r2": ["Duke"],
+      "friday_s16": ["Connecticut"]
+    },
+    "results": {
+      "thursday_r1": "loss",
+      "friday_r1": "win",
+      "saturday_r2": "win",
+      "sunday_r2": "win",
+      "friday_s16": "pending"
+    }
+  },
+  {
+    "id": 5,
+    "name": "Sofia",
+    "status": "alive",
+    "buybacks": 0,
+    "needsBuyback": false,
+    "totalSpent": 25,
+    "picks": {
+      "thursday_r1": ["Connecticut", "Purdue"],
+      "friday_r1": ["Alabama", "Gonzaga"],
+      "saturday_r2": ["Kansas"],
+      "sunday_r2": ["Tennessee"],
+      "thursday_s16": ["Houston"]
+    },
+    "results": {
+      "thursday_r1": "win",
+      "friday_r1": "win",
+      "saturday_r2": "win",
+      "sunday_r2": "win",
+      "thursday_s16": "pending"
+    }
+  },
+  {
+    "id": 6,
+    "name": "Jake",
+    "status": "eliminated",
+    "buybacks": 2,
+    "needsBuyback": false,
+    "totalSpent": 75,
+    "picks": {
+      "thursday_r1": ["Florida", "Missouri"],
+      "friday_r1": ["Duke", "Texas", "Penn State", "Xavier"],
+      "saturday_r2": ["Alabama", "Baylor", "Creighton"],
+      "sunday_r2": ["Houston"]
+    },
+    "results": {
+      "thursday_r1": "loss",
+      "friday_r1": "win",
+      "saturday_r2": "loss",
+      "sunday_r2": "loss"
+    }
+  },
+  {
+    "id": 7,
+    "name": "Layla",
+    "status": "eliminated",
+    "buybacks": 1,
+    "needsBuyback": false,
+    "totalSpent": 50,
+    "picks": {
+      "thursday_r1": ["Illinois", "Ohio State"],
+      "friday_r1": ["Connecticut", "Arkansas", "Florida Atlantic", "Virginia"],
+      "saturday_r2": ["Purdue"]
+    },
+    "results": {
+      "thursday_r1": "loss",
+      "friday_r1": "win",
+      "saturday_r2": "loss"
+    }
+  },
+  {
+    "id": 8,
+    "name": "Omar",
+    "status": "eliminated",
+    "buybacks": 0,
+    "needsBuyback": false,
+    "totalSpent": 25,
+    "picks": {
+      "thursday_r1": ["Kentucky", "Marquette"],
+      "friday_r1": ["Baylor", "Tennessee"]
+    },
+    "results": {
+      "thursday_r1": "win",
+      "friday_r1": "loss"
+    }
+  }
+]

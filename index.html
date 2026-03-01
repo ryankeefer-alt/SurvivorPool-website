@@ -467,6 +467,49 @@ function App() {
   const [submitErr,       setSubmitErr]       = useState('');
   const [submitting,      setSubmitting]      = useState(false);
 
+  // ── Admin Edit Player State ──
+  const [editingPlayer, setEditingPlayer] = useState(null);
+  const [editPicks, setEditPicks] = useState({});
+  const [editStatus, setEditStatus] = useState('alive');
+  const [editBuybacks, setEditBuybacks] = useState(0);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editErr, setEditErr] = useState('');
+
+  const openPlayerEdit = (player) => {
+    setEditingPlayer(player);
+    setEditPicks(JSON.parse(JSON.stringify(player.picks || {})));
+    setEditStatus(player.status);
+    setEditBuybacks(player.buybacks);
+    setEditErr('');
+  };
+
+  const savePlayerEdit = async () => {
+    setEditSaving(true);
+    setEditErr('');
+    try {
+      const resp = await fetch('/api/admin/player', {
+        method: 'POST',
+        headers: adminHeaders(),
+        body: JSON.stringify({
+          id: editingPlayer.id,
+          picks: editPicks,
+          status: editStatus,
+          buybacks: editBuybacks,
+        }),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        setEditingPlayer(null);
+        fetchState();
+      } else {
+        setEditErr(data.error || 'Failed to save.');
+      }
+    } catch {
+      setEditErr('Connection error.');
+    }
+    setEditSaving(false);
+  };
+
   // ── Derived values from config ──
   const CURRENT_DAY = config?.currentDay || 'thursday_r1';
   const BUYBACK_DAYS = config?.buybackDays || [];
@@ -1115,23 +1158,130 @@ function App() {
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>ID</th><th>Name</th><th>Status</th><th>Buybacks</th><th>Spent</th>
+                      <th>ID</th><th>Name</th><th>Status</th><th>Buybacks</th><th>Spent</th><th></th>
                     </tr>
                   </thead>
                   <tbody>
                     {players.map(p => (
-                      <tr key={p.id}>
+                      <tr key={p.id} style={{cursor:'pointer'}} onClick={() => openPlayerEdit(p)}>
                         <td>{p.id}</td>
                         <td>{p.name}</td>
                         <td><span className={`badge badge-${p.status === 'alive' ? 'alive' : 'out'}`} style={{fontSize:10}}>{p.status}</span></td>
                         <td>{p.buybacks}</td>
                         <td>${p.totalSpent}</td>
+                        <td style={{fontSize:11, color:'var(--accent)'}}>Edit</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {/* Edit Player Modal */}
+            {editingPlayer && (
+              <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16, backdropFilter:'blur(4px)'}}
+                   onClick={() => setEditingPlayer(null)}>
+                <div className="card" style={{width:'100%', maxWidth:520, maxHeight:'85vh', overflowY:'auto'}}
+                     onClick={e => e.stopPropagation()}>
+                  <div className="card-header">
+                    <div className="card-title">Edit: {editingPlayer.name}</div>
+                    <button className="btn btn-ghost" style={{padding:'5px 10px'}} onClick={() => setEditingPlayer(null)}>✕</button>
+                  </div>
+                  <div style={{padding:'20px 22px'}}>
+
+                    {/* Status */}
+                    <div style={{marginBottom:16}}>
+                      <label className="form-label">Status</label>
+                      <select className="form-select" value={editStatus} onChange={e => setEditStatus(e.target.value)}>
+                        <option value="alive">Alive</option>
+                        <option value="eliminated">Eliminated</option>
+                      </select>
+                    </div>
+
+                    {/* Buybacks */}
+                    <div style={{marginBottom:16}}>
+                      <label className="form-label">Buybacks</label>
+                      <select className="form-select" value={editBuybacks} onChange={e => setEditBuybacks(parseInt(e.target.value))}>
+                        <option value={0}>0</option>
+                        <option value={1}>1</option>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                      </select>
+                    </div>
+
+                    {/* Picks per day */}
+                    <div style={{marginBottom:8}}>
+                      <label className="form-label">Picks by Day</label>
+                    </div>
+                    {DAY_ORDER.map(day => {
+                      const dayPicks = editPicks[day];
+                      if (!dayPicks && day !== CURRENT_DAY) return null;
+                      const picks = dayPicks || [];
+                      return (
+                        <div key={day} style={{marginBottom:14, padding:'12px 14px', background:'var(--raised)', borderRadius:8, border:'1px solid var(--border)'}}>
+                          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+                            <span style={{fontSize:12, fontWeight:700, color:'var(--accent)', letterSpacing:'0.05em', textTransform:'uppercase'}}>{DAY_LABELS[day]}</span>
+                            {!dayPicks && (
+                              <button className="btn btn-ghost" style={{fontSize:11, padding:'3px 10px'}}
+                                      onClick={() => setEditPicks(prev => ({...prev, [day]: ['']}))}>
+                                + Add Picks
+                              </button>
+                            )}
+                          </div>
+                          {picks.map((pick, idx) => (
+                            <div key={idx} style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
+                              <select className="form-select" style={{flex:1, marginBottom:0}}
+                                      value={pick} onChange={e => {
+                                        const updated = [...picks];
+                                        updated[idx] = e.target.value;
+                                        setEditPicks(prev => ({...prev, [day]: updated}));
+                                      }}>
+                                <option value="">Select team...</option>
+                                {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                              <button className="btn btn-ghost" style={{padding:'4px 8px', fontSize:14, color:'var(--danger)'}}
+                                      onClick={() => {
+                                        const updated = picks.filter((_, i) => i !== idx);
+                                        if (updated.length === 0) {
+                                          const newPicks = {...editPicks};
+                                          delete newPicks[day];
+                                          setEditPicks(newPicks);
+                                        } else {
+                                          setEditPicks(prev => ({...prev, [day]: updated}));
+                                        }
+                                      }}>✕</button>
+                            </div>
+                          ))}
+                          {dayPicks && (
+                            <button className="btn btn-ghost" style={{fontSize:11, padding:'3px 10px', marginTop:4}}
+                                    onClick={() => setEditPicks(prev => ({...prev, [day]: [...picks, '']}))}>
+                              + Add Pick
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {editErr && (
+                      <div style={{color:'var(--danger)', fontSize:13, marginBottom:12, padding:'10px 14px',
+                                   background:'rgba(248,113,113,.08)', border:'1px solid rgba(248,113,113,.2)', borderRadius:8}}>
+                        {editErr}
+                      </div>
+                    )}
+
+                    <div style={{display:'flex', gap:10, marginTop:16}}>
+                      <button className="btn btn-ghost" style={{flex:1, justifyContent:'center'}} onClick={() => setEditingPlayer(null)}>
+                        Cancel
+                      </button>
+                      <button className="btn btn-primary" style={{flex:1, justifyContent:'center', opacity: editSaving ? 0.6 : 1}}
+                              onClick={savePlayerEdit} disabled={editSaving}>
+                        {editSaving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
         )}

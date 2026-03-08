@@ -2,9 +2,12 @@
   "name": "survivorpool-website",
   "version": "1.0.0",
   "description": "March Madness Knockout Pool 2025",
-  "main": "server.js",
+  "main": "app.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node app.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "express": "^4.18.2"

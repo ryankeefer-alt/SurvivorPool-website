@@ -307,7 +307,7 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useMemo, useCallback } = React;
+const { useState, useMemo, useCallback, useEffect } = React;
 
 /* ────────────────────────────────
    SVG Basketball Component
@@ -384,7 +384,7 @@ const Avatar = ({ name, size = 38 }) => {
 };
 
 /* ────────────────────────────────
-   DATA
+   STATIC LABELS (display only)
 ──────────────────────────────── */
 const DAY_ORDER = [
   'thursday_r1','friday_r1','saturday_r2','sunday_r2',
@@ -402,18 +402,6 @@ const DAY_FULL = {
   thursday_s16:'Thursday — Sweet 16', friday_s16:'Friday — Sweet 16',
   saturday_e8:'Saturday — Elite 8', sunday_e8:'Sunday — Elite 8',
   saturday_ff:'Saturday — Final Four', monday_champ:'Monday — Championship'
-};
-
-const TEAMS_BY_DAY = {
-  thursday_r1: [
-    'Alabama State','Arkansas','Auburn','BYU','Clemson','Creighton','Drake',
-    'Georgia','Gonzaga','High Point','Houston','Kansas','Louisville',
-    'McNeese State','Michigan','Missouri','Montana','Omaha','Purdue',
-    'SIU Edwardsville','St. John\'s','Tennessee','Texas A&M','Texas Tech',
-    'UC San Diego','UCLA','UNC Wilmington','Utah State','VCU',
-    'Wisconsin','Wofford','Yale'
-  ],
-  friday_r1: [],
 };
 
 const PICKS_PER_DAY = {
@@ -457,56 +445,73 @@ const RULES_DATA = [
   },
 ];
 
-const INITIAL_PLAYERS = [];
-
-const GAMES_DATA = {
+const TEAMS_BY_DAY_DEFAULT = {
   thursday_r1: [
-    { id: 1, home: 'Houston', away: 'SIU Edwardsville', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 2, home: 'Auburn', away: 'Alabama State', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 3, home: "St. John's", away: 'Omaha', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 4, home: 'Tennessee', away: 'Wofford', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 5, home: 'Wisconsin', away: 'Montana', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 6, home: 'Texas Tech', away: 'UNC Wilmington', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 7, home: 'Purdue', away: 'High Point', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 8, home: 'Texas A&M', away: 'Yale', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 9, home: 'Michigan', away: 'UC San Diego', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 10, home: 'Clemson', away: 'McNeese State', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 11, home: 'BYU', away: 'VCU', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 12, home: 'Missouri', away: 'Drake', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 13, home: 'UCLA', away: 'Utah State', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 14, home: 'Kansas', away: 'Arkansas', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 15, home: 'Gonzaga', away: 'Georgia', homeScore: null, awayScore: null, winner: null, final: false },
-    { id: 16, home: 'Louisville', away: 'Creighton', homeScore: null, awayScore: null, winner: null, final: false },
-  ]
+    'Alabama State','Arkansas','Auburn','BYU','Clemson','Creighton','Drake',
+    'Georgia','Gonzaga','High Point','Houston','Kansas','Louisville',
+    'McNeese State','Michigan','Missouri','Montana','Omaha','Purdue',
+    'SIU Edwardsville',"St. John's",'Tennessee','Texas A&M','Texas Tech',
+    'UC San Diego','UCLA','UNC Wilmington','Utah State','VCU',
+    'Wisconsin','Wofford','Yale'
+  ],
+  friday_r1: [],
 };
-
-// Compute winners per day from game results
-const WINNERS_BY_DAY = {};
-Object.entries(GAMES_DATA).forEach(([day, games]) => {
-  WINNERS_BY_DAY[day] = new Set(games.filter(g => g.final && g.winner).map(g => g.winner));
-});
-
-const CURRENT_DAY = 'thursday_r1';
-const BUYBACK_DAYS = ['friday_r1', 'saturday_r2', 'sunday_r2'];
 
 /* ────────────────────────────────
    MAIN APP
 ──────────────────────────────── */
 function App() {
   const [activeTab, setActiveTab]   = useState('standings');
-  const [players,   setPlayers]     = useState(INITIAL_PLAYERS);
+  const [players,   setPlayers]     = useState([]);
+  const [gamesData, setGamesData]   = useState({});
   const [closedDays, setClosedDays] = useState(new Set());
   const [submissionDay, setSubmissionDay] = useState('thursday_r1');
+  const [teamsData, setTeamsData]   = useState(TEAMS_BY_DAY_DEFAULT);
+  const [loading, setLoading]       = useState(true);
   const [showAdminPrompt, setShowAdminPrompt] = useState(false);
   const [adminPin, setAdminPin] = useState('');
   const [adminErr, setAdminErr] = useState('');
 
-  const ADMIN_PIN = '2025';
+  // ── Load data from API on mount ──
+  const fetchState = useCallback(() => {
+    fetch('/api/state')
+      .then(r => r.json())
+      .then(data => {
+        setPlayers(data.players || []);
+        setGamesData(data.games || {});
+        if (data.config) {
+          setClosedDays(new Set(data.config.closedDays || []));
+          setSubmissionDay(data.config.currentDay || 'thursday_r1');
+        }
+        if (data.teams) setTeamsData(data.teams);
+        setLoading(false);
+      })
+      .catch(err => { console.error('Failed to load state:', err); setLoading(false); });
+  }, []);
+
+  useEffect(() => { fetchState(); }, [fetchState]);
+
+  // ── Compute winners from games data ──
+  const WINNERS_BY_DAY = useMemo(() => {
+    const w = {};
+    Object.entries(gamesData).forEach(([day, games]) => {
+      w[day] = new Set(games.filter(g => g.final && g.winner).map(g => g.winner));
+    });
+    return w;
+  }, [gamesData]);
+
   const entriesClosed = closedDays.has(submissionDay);
 
   const handleAdminToggle = () => {
     if (entriesClosed) {
-      setClosedDays(prev => { const next = new Set(prev); next.delete(submissionDay); return next; });
+      // Unlock — no PIN needed
+      fetch('/api/admin/lock', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ day: submissionDay, action: 'unlock' })
+      }).then(r => r.json()).then(() => {
+        setClosedDays(prev => { const next = new Set(prev); next.delete(submissionDay); return next; });
+      });
       setShowAdminPrompt(false);
     } else {
       setShowAdminPrompt(true);
@@ -516,24 +521,40 @@ function App() {
   };
 
   const handleAdminSubmit = () => {
-    if (adminPin === ADMIN_PIN) {
-      setClosedDays(prev => new Set([...prev, submissionDay]));
-      setShowAdminPrompt(false);
-      setAdminPin('');
-      setAdminErr('');
-    } else {
-      setAdminErr('Incorrect PIN');
-    }
+    fetch('/api/admin/lock', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ day: submissionDay, action: 'lock', pin: adminPin })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        setAdminErr(data.error);
+      } else {
+        setClosedDays(new Set(data.closedDays || []));
+        setShowAdminPrompt(false);
+        setAdminPin('');
+        setAdminErr('');
+      }
+    })
+    .catch(() => setAdminErr('Network error'));
   };
 
   const handleAdvanceDay = () => {
-    const currentIdx = DAY_ORDER.indexOf(submissionDay);
-    if (currentIdx < DAY_ORDER.length - 1) {
-      setSubmissionDay(DAY_ORDER[currentIdx + 1]);
-      setTeamPicks([]);
-      setPickerName('');
-      setSubmitted(false);
-    }
+    fetch('/api/admin/advance-day', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        setSubmissionDay(data.currentDay);
+        setTeamPicks([]);
+        setPickerName('');
+        setSubmitted(false);
+      }
+    });
   };
 
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
@@ -550,8 +571,9 @@ function App() {
   const [teamPicks,       setTeamPicks]       = useState([]);
   const [submitted,       setSubmitted]       = useState(false);
   const [submitErr,       setSubmitErr]       = useState('');
+  const [submitting,      setSubmitting]      = useState(false);
 
-  const currentTeams = TEAMS_BY_DAY[submissionDay] || [];
+  const currentTeams = teamsData[submissionDay] || [];
   const requiredPicks = PICKS_PER_DAY[submissionDay] || 1;
 
   const handleTabChange = useCallback((tab) => {
@@ -568,53 +590,28 @@ function App() {
     if (teamPicks.filter(t => t).length < requiredPicks) { setSubmitErr(`Please select ${requiredPicks} team${requiredPicks > 1 ? 's' : ''}.`); return; }
     if (new Set(teamPicks).size < teamPicks.length) { setSubmitErr('You must pick different teams.'); return; }
 
-    const winners = WINNERS_BY_DAY[submissionDay];
-    const hasResults = winners && winners.size > 0;
-
-    if (submissionDay === 'thursday_r1') {
-      // Thursday: create new entry
-      const existing = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
-      if (existing) { setSubmitErr('That name has already been submitted. Use a different name or contact the pool admin.'); return; }
-      let result = 'pending';
-      let status = 'alive';
-      if (hasResults) {
-        const allWon = teamPicks.every(t => winners.has(t));
-        result = allWon ? 'win' : 'loss';
-        status = allWon ? 'alive' : 'eliminated';
-      }
-      const newPlayer = {
-        id: Date.now(),
+    setSubmitting(true);
+    fetch('/api/picks', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
         name: pickerName.trim(),
-        status: status,
-        buybacks: 0,
-        needsBuyback: false,
-        totalSpent: 25,
-        picks: { [submissionDay]: [...teamPicks] },
-        results: { [submissionDay]: result }
-      };
-      setPlayers(prev => [...prev, newPlayer]);
-    } else {
-      // Later days: update existing entry
-      const existing = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
-      if (!existing) { setSubmitErr('Entry not found. Check your name matches your original entry.'); return; }
-      if (existing.status === 'eliminated') { setSubmitErr('You have been eliminated. Contact admin about buyback options.'); return; }
-      if (existing.picks[submissionDay]) { setSubmitErr('You already submitted picks for this day.'); return; }
-      let result = 'pending';
-      if (hasResults) {
-        const allWon = teamPicks.every(t => winners.has(t));
-        result = allWon ? 'win' : 'loss';
+        day: submissionDay,
+        picks: teamPicks.filter(t => t),
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      setSubmitting(false);
+      if (data.error) {
+        setSubmitErr(data.error);
+      } else {
+        setSubmitted(true);
+        // Refresh data from server to get updated player list
+        fetchState();
       }
-      setPlayers(prev => prev.map(p => {
-        if (p.id !== existing.id) return p;
-        return {
-          ...p,
-          picks: { ...p.picks, [submissionDay]: [...teamPicks] },
-          results: { ...p.results, [submissionDay]: result },
-          status: result === 'loss' ? 'eliminated' : p.status,
-        };
-      }));
-    }
-    setSubmitted(true);
+    })
+    .catch(() => { setSubmitting(false); setSubmitErr('Network error. Please try again.'); });
   };
 
   const TABS = [
@@ -625,6 +622,17 @@ function App() {
   ];
 
   const totalPot = players.reduce((s, p) => s + p.totalSpent, 0);
+
+  if (loading) {
+    return (
+      <div style={{minHeight:'100vh', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div style={{textAlign:'center'}}>
+          <Basketball size={80} spin={true} glow={true} />
+          <div className="anton" style={{marginTop:24, fontSize:18, color:'var(--cream)', letterSpacing:'0.05em'}}>LOADING...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{minHeight:'100vh', background:'var(--bg)'}}>
@@ -757,7 +765,7 @@ function App() {
                 <div style={{fontSize:11, color:'var(--muted)', marginTop:6, letterSpacing:'0.08em', textTransform:'uppercase'}}>Eliminated</div>
               </div>
               <div className="stat-card white anim-up anim-up-3">
-                <div className="mono" style={{fontSize:28, fontWeight:700, color:'#e5e7eb', lineHeight:1}}>{DAY_LABELS[CURRENT_DAY]}</div>
+                <div className="mono" style={{fontSize:28, fontWeight:700, color:'#e5e7eb', lineHeight:1}}>{DAY_LABELS[submissionDay]}</div>
                 <div style={{fontSize:11, color:'var(--muted)', marginTop:6, letterSpacing:'0.08em', textTransform:'uppercase'}}>Current Round</div>
               </div>
             </div>
@@ -873,7 +881,7 @@ function App() {
         {/* ── SCORES ── */}
         {activeTab === 'scores' && (
           <div className="anim-up">
-            {Object.keys(GAMES_DATA).length === 0 ? (
+            {Object.keys(gamesData).length === 0 ? (
               <div className="card" style={{padding:'40px 22px', textAlign:'center'}}>
                 <Basketball size={48} bounce={true} glow={true} />
                 <div className="anton" style={{fontSize:20, color:'var(--cream)', marginTop:16, letterSpacing:'0.04em'}}>
@@ -884,7 +892,7 @@ function App() {
                 </div>
               </div>
             ) : (
-              Object.entries(GAMES_DATA).map(([day, games]) => (
+              Object.entries(gamesData).map(([day, games]) => (
                 <div key={day} style={{marginBottom:24}}>
                   <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
                     <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>{DAY_FULL[day]}</div>
@@ -1038,9 +1046,9 @@ function App() {
                     </div>
                   )}
 
-                  <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8}}
-                          onClick={handleSubmitPicks}>
-                    {submissionDay === 'thursday_r1' ? 'Lock In Picks — $25 Entry' : 'Lock In Picks'}
+                  <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8, opacity: submitting ? 0.6 : 1}}
+                          onClick={handleSubmitPicks} disabled={submitting}>
+                    {submitting ? 'Submitting...' : (submissionDay === 'thursday_r1' ? 'Lock In Picks — $25 Entry' : 'Lock In Picks')}
                   </button>
                 </div>
 

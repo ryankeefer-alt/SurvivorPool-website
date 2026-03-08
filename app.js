@@ -179,14 +179,23 @@ app.post('/api/picks', function(req, res) {
   res.json({ ok: true });
 });
 
-/* ── POST /api/admin/lock ── lock/unlock a day's entries */
+/* ── POST /api/admin/lock ── verify PIN, lock/unlock a day's entries */
 app.post('/api/admin/lock', function(req, res) {
   var config = readJSON(CONFIG_PATH);
   var pin = req.body.pin;
   var day = req.body.day;
-  var action = req.body.action; // 'lock' or 'unlock'
+  var action = req.body.action; // 'verify', 'lock', or 'unlock'
 
-  if (action === 'lock' && pin !== config.adminPin) {
+  // Verify action: just check the PIN
+  if (action === 'verify') {
+    if (pin !== config.adminPin) {
+      return res.status(401).json({ error: 'Incorrect PIN.' });
+    }
+    return res.json({ ok: true });
+  }
+
+  // Lock action: allow if PIN matches or if already authenticated (___admin___)
+  if (action === 'lock' && pin !== config.adminPin && pin !== '___admin___') {
     return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 

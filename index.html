@@ -404,14 +404,25 @@ const DAY_FULL = {
   saturday_ff:'Saturday — Final Four', monday_champ:'Monday — Championship'
 };
 
-const TEAMS = [
-  'Alabama State','Arkansas','Auburn','BYU','Clemson','Creighton','Drake',
-  'Georgia','Gonzaga','High Point','Houston','Kansas','Louisville',
-  'McNeese State','Michigan','Missouri','Montana','Omaha','Purdue',
-  'SIU Edwardsville','St. John\'s','Tennessee','Texas A&M','Texas Tech',
-  'UC San Diego','UCLA','UNC Wilmington','Utah State','VCU',
-  'Wisconsin','Wofford','Yale'
-];
+const TEAMS_BY_DAY = {
+  thursday_r1: [
+    'Alabama State','Arkansas','Auburn','BYU','Clemson','Creighton','Drake',
+    'Georgia','Gonzaga','High Point','Houston','Kansas','Louisville',
+    'McNeese State','Michigan','Missouri','Montana','Omaha','Purdue',
+    'SIU Edwardsville','St. John\'s','Tennessee','Texas A&M','Texas Tech',
+    'UC San Diego','UCLA','UNC Wilmington','Utah State','VCU',
+    'Wisconsin','Wofford','Yale'
+  ],
+  friday_r1: [],
+};
+
+const PICKS_PER_DAY = {
+  thursday_r1: 2, friday_r1: 2,
+  saturday_r2: 1, sunday_r2: 1,
+  thursday_s16: 1, friday_s16: 1,
+  saturday_e8: 1, sunday_e8: 1,
+  saturday_ff: 1, monday_champ: 1,
+};
 
 const RULES_DATA = [
   {
@@ -450,30 +461,30 @@ const INITIAL_PLAYERS = [];
 
 const GAMES_DATA = {
   thursday_r1: [
-    { id: 1, home: 'Houston', away: 'SIU Edwardsville', homeScore: 78, awayScore: 40, winner: 'Houston', final: true },
-    { id: 2, home: 'Auburn', away: 'Alabama State', homeScore: 83, awayScore: 63, winner: 'Auburn', final: true },
-    { id: 3, home: "St. John's", away: 'Omaha', homeScore: 83, awayScore: 53, winner: "St. John's", final: true },
-    { id: 4, home: 'Tennessee', away: 'Wofford', homeScore: 77, awayScore: 62, winner: 'Tennessee', final: true },
-    { id: 5, home: 'Wisconsin', away: 'Montana', homeScore: 85, awayScore: 66, winner: 'Wisconsin', final: true },
-    { id: 6, home: 'Texas Tech', away: 'UNC Wilmington', homeScore: 82, awayScore: 72, winner: 'Texas Tech', final: true },
-    { id: 7, home: 'Purdue', away: 'High Point', homeScore: 75, awayScore: 63, winner: 'Purdue', final: true },
-    { id: 8, home: 'Texas A&M', away: 'Yale', homeScore: 80, awayScore: 71, winner: 'Texas A&M', final: true },
-    { id: 9, home: 'Michigan', away: 'UC San Diego', homeScore: 68, awayScore: 65, winner: 'Michigan', final: true },
-    { id: 10, home: 'McNeese State', away: 'Clemson', homeScore: 69, awayScore: 67, winner: 'McNeese State', final: true },
-    { id: 11, home: 'BYU', away: 'VCU', homeScore: 80, awayScore: 71, winner: 'BYU', final: true },
-    { id: 12, home: 'Drake', away: 'Missouri', homeScore: 67, awayScore: 57, winner: 'Drake', final: true },
-    { id: 13, home: 'UCLA', away: 'Utah State', homeScore: 72, awayScore: 47, winner: 'UCLA', final: true },
-    { id: 14, home: 'Arkansas', away: 'Kansas', homeScore: 79, awayScore: 72, winner: 'Arkansas', final: true },
-    { id: 15, home: 'Gonzaga', away: 'Georgia', homeScore: 89, awayScore: 68, winner: 'Gonzaga', final: true },
-    { id: 16, home: 'Creighton', away: 'Louisville', homeScore: 89, awayScore: 75, winner: 'Creighton', final: true },
+    { id: 1, home: 'Houston', away: 'SIU Edwardsville', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 2, home: 'Auburn', away: 'Alabama State', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 3, home: "St. John's", away: 'Omaha', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 4, home: 'Tennessee', away: 'Wofford', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 5, home: 'Wisconsin', away: 'Montana', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 6, home: 'Texas Tech', away: 'UNC Wilmington', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 7, home: 'Purdue', away: 'High Point', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 8, home: 'Texas A&M', away: 'Yale', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 9, home: 'Michigan', away: 'UC San Diego', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 10, home: 'Clemson', away: 'McNeese State', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 11, home: 'BYU', away: 'VCU', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 12, home: 'Missouri', away: 'Drake', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 13, home: 'UCLA', away: 'Utah State', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 14, home: 'Kansas', away: 'Arkansas', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 15, home: 'Gonzaga', away: 'Georgia', homeScore: null, awayScore: null, winner: null, final: false },
+    { id: 16, home: 'Louisville', away: 'Creighton', homeScore: null, awayScore: null, winner: null, final: false },
   ]
 };
 
-// Compute winners from game results
-const THURSDAY_WINNERS = new Set();
-if (GAMES_DATA.thursday_r1) {
-  GAMES_DATA.thursday_r1.forEach(g => { if (g.final && g.winner) THURSDAY_WINNERS.add(g.winner); });
-}
+// Compute winners per day from game results
+const WINNERS_BY_DAY = {};
+Object.entries(GAMES_DATA).forEach(([day, games]) => {
+  WINNERS_BY_DAY[day] = new Set(games.filter(g => g.final && g.winner).map(g => g.winner));
+});
 
 const CURRENT_DAY = 'thursday_r1';
 const BUYBACK_DAYS = ['friday_r1', 'saturday_r2', 'sunday_r2'];
@@ -484,20 +495,19 @@ const BUYBACK_DAYS = ['friday_r1', 'saturday_r2', 'sunday_r2'];
 function App() {
   const [activeTab, setActiveTab]   = useState('standings');
   const [players,   setPlayers]     = useState(INITIAL_PLAYERS);
-  const [entriesClosed, setEntriesClosed] = useState(false);
+  const [closedDays, setClosedDays] = useState(new Set());
+  const [submissionDay, setSubmissionDay] = useState('thursday_r1');
   const [showAdminPrompt, setShowAdminPrompt] = useState(false);
   const [adminPin, setAdminPin] = useState('');
   const [adminErr, setAdminErr] = useState('');
 
   const ADMIN_PIN = '2025';
+  const entriesClosed = closedDays.has(submissionDay);
 
   const handleAdminToggle = () => {
     if (entriesClosed) {
-      // Re-open entries (no pin needed to reopen)
-      setEntriesClosed(false);
+      setClosedDays(prev => { const next = new Set(prev); next.delete(submissionDay); return next; });
       setShowAdminPrompt(false);
-      setAdminPin('');
-      setAdminErr('');
     } else {
       setShowAdminPrompt(true);
       setAdminPin('');
@@ -507,7 +517,7 @@ function App() {
 
   const handleAdminSubmit = () => {
     if (adminPin === ADMIN_PIN) {
-      setEntriesClosed(true);
+      setClosedDays(prev => new Set([...prev, submissionDay]));
       setShowAdminPrompt(false);
       setAdminPin('');
       setAdminErr('');
@@ -516,56 +526,94 @@ function App() {
     }
   };
 
+  const handleAdvanceDay = () => {
+    const currentIdx = DAY_ORDER.indexOf(submissionDay);
+    if (currentIdx < DAY_ORDER.length - 1) {
+      setSubmissionDay(DAY_ORDER[currentIdx + 1]);
+      setTeamPicks([]);
+      setPickerName('');
+      setSubmitted(false);
+    }
+  };
+
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
+  const getPickBadgeClass = (team, day) => {
+    const winners = WINNERS_BY_DAY[day];
+    if (!winners || winners.size === 0) return 'badge-pending';
+    return winners.has(team) ? 'badge-win' : 'badge-loss';
+  };
+
   // ── Submit Picks State ──
   const [pickerName,      setPickerName]      = useState('');
-  const [teamPick1,       setTeamPick1]       = useState('');
-  const [teamPick2,       setTeamPick2]       = useState('');
+  const [teamPicks,       setTeamPicks]       = useState([]);
   const [submitted,       setSubmitted]       = useState(false);
   const [submitErr,       setSubmitErr]       = useState('');
 
+  const currentTeams = TEAMS_BY_DAY[submissionDay] || [];
+  const requiredPicks = PICKS_PER_DAY[submissionDay] || 1;
 
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
     setSubmitted(false);
     setSubmitErr('');
     setPickerName('');
-    setTeamPick1('');
-    setTeamPick2('');
+    setTeamPicks([]);
   }, []);
 
   const handleSubmitPicks = () => {
     setSubmitErr('');
     if (!pickerName.trim()) { setSubmitErr('Please enter your name.'); return; }
-    if (!teamPick1) { setSubmitErr('Please select your first team.'); return; }
-    if (!teamPick2) { setSubmitErr('Please select your second team.'); return; }
-    if (teamPick1 === teamPick2) { setSubmitErr('You must pick two different teams.'); return; }
-    // Check if name already submitted
-    const existing = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
-    if (existing) { setSubmitErr('That name has already been submitted. Use a different name or contact the pool admin.'); return; }
-    // Evaluate picks against game results
-    let result = 'pending';
-    let status = 'alive';
-    if (THURSDAY_WINNERS.size > 0) {
-      const pick1Won = THURSDAY_WINNERS.has(teamPick1);
-      const pick2Won = THURSDAY_WINNERS.has(teamPick2);
-      if (pick1Won && pick2Won) { result = 'win'; }
-      else { result = 'loss'; status = 'eliminated'; }
+    if (teamPicks.filter(t => t).length < requiredPicks) { setSubmitErr(`Please select ${requiredPicks} team${requiredPicks > 1 ? 's' : ''}.`); return; }
+    if (new Set(teamPicks).size < teamPicks.length) { setSubmitErr('You must pick different teams.'); return; }
+
+    const winners = WINNERS_BY_DAY[submissionDay];
+    const hasResults = winners && winners.size > 0;
+
+    if (submissionDay === 'thursday_r1') {
+      // Thursday: create new entry
+      const existing = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
+      if (existing) { setSubmitErr('That name has already been submitted. Use a different name or contact the pool admin.'); return; }
+      let result = 'pending';
+      let status = 'alive';
+      if (hasResults) {
+        const allWon = teamPicks.every(t => winners.has(t));
+        result = allWon ? 'win' : 'loss';
+        status = allWon ? 'alive' : 'eliminated';
+      }
+      const newPlayer = {
+        id: Date.now(),
+        name: pickerName.trim(),
+        status: status,
+        buybacks: 0,
+        needsBuyback: false,
+        totalSpent: 25,
+        picks: { [submissionDay]: [...teamPicks] },
+        results: { [submissionDay]: result }
+      };
+      setPlayers(prev => [...prev, newPlayer]);
+    } else {
+      // Later days: update existing entry
+      const existing = players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
+      if (!existing) { setSubmitErr('Entry not found. Check your name matches your original entry.'); return; }
+      if (existing.status === 'eliminated') { setSubmitErr('You have been eliminated. Contact admin about buyback options.'); return; }
+      if (existing.picks[submissionDay]) { setSubmitErr('You already submitted picks for this day.'); return; }
+      let result = 'pending';
+      if (hasResults) {
+        const allWon = teamPicks.every(t => winners.has(t));
+        result = allWon ? 'win' : 'loss';
+      }
+      setPlayers(prev => prev.map(p => {
+        if (p.id !== existing.id) return p;
+        return {
+          ...p,
+          picks: { ...p.picks, [submissionDay]: [...teamPicks] },
+          results: { ...p.results, [submissionDay]: result },
+          status: result === 'loss' ? 'eliminated' : p.status,
+        };
+      }));
     }
-    // Create new player entry
-    const newPlayer = {
-      id: Date.now(),
-      name: pickerName.trim(),
-      status: status,
-      buybacks: 0,
-      needsBuyback: false,
-      totalSpent: 25,
-      picks: { thursday_r1: [teamPick1, teamPick2] },
-      results: { thursday_r1: result }
-    };
-    setPlayers(prev => [...prev, newPlayer]);
     setSubmitted(true);
   };
 
@@ -612,20 +660,35 @@ function App() {
                 </div>
                 <div style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:4}}>Total Pot</div>
               </div>
-              <button onClick={handleAdminToggle}
-                      title={entriesClosed ? 'Entries closed — click to reopen' : 'Click to close entries'}
-                      style={{
-                        background:'none', border:'none', cursor:'pointer', padding:4,
-                        color: entriesClosed ? 'var(--danger)' : 'var(--muted)',
-                        fontSize:18, lineHeight:1,
-                        opacity: 0.7,
-                        transition: 'opacity .2s, color .2s',
-                      }}
-                      onMouseOver={e => e.currentTarget.style.opacity = 1}
-                      onMouseOut={e => e.currentTarget.style.opacity = 0.7}
-              >
-                {entriesClosed ? '🔒' : '🔓'}
-              </button>
+              <div style={{display:'flex', alignItems:'center', gap:6}}>
+                {entriesClosed && DAY_ORDER.indexOf(submissionDay) < DAY_ORDER.length - 1 && (
+                  <button onClick={handleAdvanceDay}
+                          title={`Open ${DAY_LABELS[DAY_ORDER[DAY_ORDER.indexOf(submissionDay) + 1]]} submissions`}
+                          style={{
+                            background:'var(--raised)', border:'1px solid var(--border)',
+                            borderRadius:6, cursor:'pointer', padding:'4px 10px',
+                            color:'var(--gold)', fontSize:11, fontWeight:700,
+                            letterSpacing:'0.05em',
+                            transition: 'opacity .2s',
+                          }}>
+                    ▶ NEXT DAY
+                  </button>
+                )}
+                <button onClick={handleAdminToggle}
+                        title={entriesClosed ? `${DAY_LABELS[submissionDay]} locked — click to reopen` : `Click to close ${DAY_LABELS[submissionDay]} entries`}
+                        style={{
+                          background:'none', border:'none', cursor:'pointer', padding:4,
+                          color: entriesClosed ? 'var(--danger)' : 'var(--muted)',
+                          fontSize:18, lineHeight:1,
+                          opacity: 0.7,
+                          transition: 'opacity .2s, color .2s',
+                        }}
+                        onMouseOver={e => e.currentTarget.style.opacity = 1}
+                        onMouseOut={e => e.currentTarget.style.opacity = 0.7}
+                >
+                  {entriesClosed ? '🔒' : '🔓'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -651,10 +714,10 @@ function App() {
           <div className="card" style={{padding:'28px 32px', maxWidth:340, width:'90%'}}
                onClick={e => e.stopPropagation()}>
             <div className="anton" style={{fontSize:18, color:'var(--cream)', letterSpacing:'0.05em', marginBottom:6}}>
-              CLOSE ENTRIES
+              CLOSE {DAY_LABELS[submissionDay]} ENTRIES
             </div>
             <div style={{fontSize:13, color:'var(--muted)', marginBottom:18}}>
-              Enter admin PIN to lock entries and reveal all picks.
+              Enter admin PIN to lock {DAY_LABELS[submissionDay]} entries and reveal picks.
             </div>
             <input className="form-input" type="password" placeholder="Enter PIN"
                    value={adminPin} onChange={e => setAdminPin(e.target.value)}
@@ -763,9 +826,11 @@ function App() {
                           <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>$25 entry</div>
                         </div>
                         <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                          {p.picks.thursday_r1 && p.picks.thursday_r1.map(t => (
-                            <span key={t} className={`badge ${THURSDAY_WINNERS.has(t) ? 'badge-win' : 'badge-loss'}`} style={{fontSize:10}}>{t}</span>
-                          ))}
+                          {Object.entries(p.picks).map(([day, picks]) =>
+                            picks.map(t => (
+                              <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
+                            ))
+                          )}
                         </div>
                       </div>
                     ))
@@ -790,9 +855,11 @@ function App() {
                           <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>$25 entry</div>
                         </div>
                         <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                          {p.picks.thursday_r1 && p.picks.thursday_r1.map(t => (
-                            <span key={t} className={`badge ${THURSDAY_WINNERS.has(t) ? 'badge-win' : 'badge-loss'}`} style={{fontSize:10}}>{t}</span>
-                          ))}
+                          {Object.entries(p.picks).map(([day, picks]) =>
+                            picks.map(t => (
+                              <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
+                            ))
+                          )}
                         </div>
                       </div>
                     ))}
@@ -821,11 +888,12 @@ function App() {
                 <div key={day} style={{marginBottom:24}}>
                   <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
                     <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>{DAY_FULL[day]}</div>
-                    {day === CURRENT_DAY && (() => {
+                    {(() => {
                       const allFinal = games.every(g => g.final);
-                      return allFinal
-                        ? <span className="badge badge-win" style={{fontSize:10}}>Final</span>
-                        : <span className="badge badge-pending" style={{animation:'glow-pulse 1.5s ease-in-out infinite'}}>Live</span>;
+                      const anyStarted = games.some(g => g.homeScore !== null);
+                      if (allFinal) return <span className="badge badge-win" style={{fontSize:10}}>Final</span>;
+                      if (anyStarted) return <span className="badge badge-pending" style={{animation:'glow-pulse 1.5s ease-in-out infinite'}}>Live</span>;
+                      return <span className="badge badge-pending" style={{fontSize:10}}>Today</span>;
                     })()}
                   </div>
                   <div className="card">
@@ -835,8 +903,8 @@ function App() {
                           <div style={{flex:1}}>
                             <div style={{display:'flex', alignItems:'center', gap:8}}>
                               <span style={{
-                                fontWeight: game.winner === game.home ? 700 : 400,
-                                color: game.winner === game.home ? 'var(--cream)' : 'var(--muted)',
+                                fontWeight: !game.winner ? 500 : game.winner === game.home ? 700 : 400,
+                                color: !game.winner ? 'var(--cream)' : game.winner === game.home ? 'var(--cream)' : 'var(--muted)',
                                 fontSize: 14,
                               }}>{game.home}</span>
                               {game.final && game.winner === game.home && (
@@ -845,8 +913,8 @@ function App() {
                             </div>
                             <div style={{display:'flex', alignItems:'center', gap:8, marginTop:4}}>
                               <span style={{
-                                fontWeight: game.winner === game.away ? 700 : 400,
-                                color: game.winner === game.away ? 'var(--cream)' : 'var(--muted)',
+                                fontWeight: !game.winner ? 500 : game.winner === game.away ? 700 : 400,
+                                color: !game.winner ? 'var(--cream)' : game.winner === game.away ? 'var(--cream)' : 'var(--muted)',
                                 fontSize: 14,
                               }}>{game.away}</span>
                               {game.final && game.winner === game.away && (
@@ -883,10 +951,10 @@ function App() {
               <div className="card" style={{padding:'40px 32px', textAlign:'center'}}>
                 <div style={{fontSize:48, marginBottom:12}}>🔒</div>
                 <div className="anton" style={{fontSize:24, color:'var(--danger)', letterSpacing:'0.04em'}}>
-                  ENTRIES ARE CLOSED
+                  {DAY_LABELS[submissionDay]} — ENTRIES CLOSED
                 </div>
                 <div style={{color:'var(--muted)', marginTop:10, fontSize:14}}>
-                  Submissions have been locked. Head to Standings to see everyone's picks.
+                  Submissions for {DAY_LABELS[submissionDay]} have been locked. Head to Standings to see picks.
                 </div>
                 <button className="btn btn-primary" style={{marginTop:20}} onClick={() => handleTabChange('standings')}>
                   View Standings
@@ -899,18 +967,19 @@ function App() {
                   PICKS LOCKED IN
                 </div>
                 <div style={{color:'var(--muted)', marginTop:8}}>
-                  {pickerName} — Thursday R1
+                  {pickerName} — {DAY_LABELS[submissionDay]}
                 </div>
-                <div style={{fontSize:13, color:'var(--accent)', marginTop:6}}>
-                  $25 entry fee added to pot
-                </div>
+                {submissionDay === 'thursday_r1' && (
+                  <div style={{fontSize:13, color:'var(--accent)', marginTop:6}}>$25 entry fee added to pot</div>
+                )}
                 <div style={{marginTop:16, display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center'}}>
-                  <span className="badge badge-pending" style={{fontSize:13, padding:'5px 14px'}}>{teamPick1}</span>
-                  <span className="badge badge-pending" style={{fontSize:13, padding:'5px 14px'}}>{teamPick2}</span>
+                  {teamPicks.map(t => (
+                    <span key={t} className="badge badge-pending" style={{fontSize:13, padding:'5px 14px'}}>{t}</span>
+                  ))}
                 </div>
                 <div style={{display:'flex', gap:10, marginTop:24, justifyContent:'center'}}>
                   <button className="btn btn-ghost"
-                          onClick={() => { setSubmitted(false); setTeamPick1(''); setTeamPick2(''); setPickerName(''); }}>
+                          onClick={() => { setSubmitted(false); setTeamPicks([]); setPickerName(''); }}>
                     Submit Another Entry
                   </button>
                   <button className="btn btn-primary" onClick={() => { handleTabChange('standings'); }}>
@@ -927,8 +996,10 @@ function App() {
                 }}>
                   <Basketball size={28} />
                   <div>
-                    <div style={{fontWeight:700, color:'var(--accent)', fontSize:13, letterSpacing:'0.05em', textTransform:'uppercase'}}>Thursday — Round of 64</div>
-                    <div style={{fontSize:12, color:'var(--muted)', marginTop:2}}>Pick TWO winners. Both must win outright. Entry fee: $25.</div>
+                    <div style={{fontWeight:700, color:'var(--accent)', fontSize:13, letterSpacing:'0.05em', textTransform:'uppercase'}}>{DAY_FULL[submissionDay] || DAY_LABELS[submissionDay]}</div>
+                    <div style={{fontSize:12, color:'var(--muted)', marginTop:2}}>
+                      Pick {requiredPicks} winner{requiredPicks > 1 ? 's' : ''}. {requiredPicks > 1 ? 'All must' : 'Must'} win outright.{submissionDay === 'thursday_r1' ? ' Entry fee: $25.' : ''}
+                    </div>
                   </div>
                 </div>
 
@@ -943,21 +1014,22 @@ function App() {
                            value={pickerName} onChange={e => setPickerName(e.target.value)} />
                   </div>
 
-                  <div style={{marginBottom:14}}>
-                    <label className="form-label">Pick 1</label>
-                    <select className="form-select" value={teamPick1} onChange={e => setTeamPick1(e.target.value)}>
-                      <option value="">Select team...</option>
-                      {TEAMS.filter(t => t !== teamPick2).map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-
-                  <div style={{marginBottom:14}}>
-                    <label className="form-label">Pick 2</label>
-                    <select className="form-select" value={teamPick2} onChange={e => setTeamPick2(e.target.value)}>
-                      <option value="">Select team...</option>
-                      {TEAMS.filter(t => t !== teamPick1).map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
+                  {Array.from({length: requiredPicks}, (_, idx) => (
+                    <div key={idx} style={{marginBottom:14}}>
+                      <label className="form-label">Pick {idx + 1}</label>
+                      <select className="form-select" value={teamPicks[idx] || ''}
+                              onChange={e => {
+                                const newPicks = [...teamPicks];
+                                newPicks[idx] = e.target.value;
+                                setTeamPicks(newPicks);
+                              }}>
+                        <option value="">Select team...</option>
+                        {currentTeams.filter(t => !teamPicks.includes(t) || teamPicks[idx] === t).map(t =>
+                          <option key={t} value={t}>{t}</option>
+                        )}
+                      </select>
+                    </div>
+                  ))}
 
                   {submitErr && (
                     <div style={{color:'var(--danger)', fontSize:13, marginBottom:12, padding:'10px 14px',
@@ -968,7 +1040,7 @@ function App() {
 
                   <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8}}
                           onClick={handleSubmitPicks}>
-                    Lock In Picks — $25 Entry
+                    {submissionDay === 'thursday_r1' ? 'Lock In Picks — $25 Entry' : 'Lock In Picks'}
                   </button>
                 </div>
 

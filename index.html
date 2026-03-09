@@ -620,6 +620,21 @@ function App() {
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
+  // ── Pick distribution for bar chart (only computed when entries are closed) ──
+  const pickDistribution = useMemo(() => {
+    if (!entriesClosed || players.length === 0) return [];
+    const counts = {};
+    players.forEach(p => {
+      const dayPicks = p.picks[submissionDay] || [];
+      dayPicks.forEach(team => {
+        counts[team] = (counts[team] || 0) + 1;
+      });
+    });
+    return Object.entries(counts)
+      .map(([team, count]) => ({ team, count }))
+      .sort((a, b) => b.count - a.count || a.team.localeCompare(b.team));
+  }, [players, submissionDay, entriesClosed]);
+
   const getPickBadgeClass = (team, day) => {
     const winners = WINNERS_BY_DAY[day];
     if (!winners || winners.size === 0) return 'badge-pending';
@@ -930,6 +945,92 @@ function App() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* ── Pick Distribution Chart ── */}
+                {pickDistribution.length > 0 && (
+                  <div className="card anim-up anim-up-4" style={{marginBottom:20}}>
+                    <div className="card-header">
+                      <div className="card-title" style={{color:'var(--gold)'}}>
+                        <span style={{marginRight:8}}>📊</span>Pick Distribution
+                      </div>
+                      <span className="badge badge-pending" style={{fontSize:10}}>{DAY_LABELS[submissionDay]}</span>
+                    </div>
+                    <div style={{padding:'18px 22px'}}>
+                      <div style={{fontSize:12, color:'var(--muted)', marginBottom:16, letterSpacing:'0.03em'}}>
+                        How many entries picked each team for {DAY_FULL[submissionDay] || submissionDay}
+                      </div>
+                      {(() => {
+                        const maxCount = Math.max(...pickDistribution.map(d => d.count));
+                        const winners = WINNERS_BY_DAY[submissionDay] || new Set();
+                        return pickDistribution.map((d, i) => {
+                          const pct = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
+                          const isWinner = winners.has(d.team);
+                          const isLoser = winners.size > 0 && !isWinner;
+                          const barColor = isWinner
+                            ? 'rgba(74,222,128,.7)'
+                            : isLoser
+                              ? 'rgba(248,113,113,.45)'
+                              : 'rgba(244,99,31,.6)';
+                          const barGlow = isWinner
+                            ? '0 0 12px rgba(74,222,128,.2)'
+                            : isLoser
+                              ? 'none'
+                              : '0 0 12px rgba(244,99,31,.15)';
+                          return (
+                            <div key={d.team} style={{
+                              display:'flex', alignItems:'center', gap:12, marginBottom:8,
+                              opacity: isLoser ? 0.55 : 1,
+                            }}>
+                              <div style={{
+                                width:120, minWidth:120, fontSize:12, fontWeight:600,
+                                color: isWinner ? 'var(--success)' : isLoser ? 'var(--muted)' : 'var(--cream)',
+                                textAlign:'right', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                                fontFamily: "'Karla', sans-serif",
+                              }}>
+                                {d.team}
+                                {isWinner && <span style={{marginLeft:4, fontSize:10}}>✓</span>}
+                                {isLoser && <span style={{marginLeft:4, fontSize:10}}>✗</span>}
+                              </div>
+                              <div style={{flex:1, height:22, background:'var(--raised)', borderRadius:4, overflow:'hidden', position:'relative'}}>
+                                <div style={{
+                                  width: pct + '%',
+                                  height:'100%',
+                                  background: barColor,
+                                  borderRadius:4,
+                                  boxShadow: barGlow,
+                                  transition: 'width .6s cubic-bezier(.22,1,.36,1)',
+                                  transitionDelay: (i * 40) + 'ms',
+                                }} />
+                              </div>
+                              <div className="mono" style={{
+                                minWidth:28, fontSize:13, fontWeight:700, textAlign:'right',
+                                color: isWinner ? 'var(--success)' : isLoser ? 'var(--muted)' : 'var(--gold)',
+                              }}>
+                                {d.count}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                      <div style={{
+                        marginTop:14, paddingTop:12, borderTop:'1px solid var(--border)',
+                        display:'flex', justifyContent:'space-between', alignItems:'center',
+                      }}>
+                        <div style={{fontSize:11, color:'var(--muted)', letterSpacing:'0.04em'}}>
+                          {players.length} total {players.length === 1 ? 'entry' : 'entries'} · {pickDistribution.length} teams picked
+                        </div>
+                        {WINNERS_BY_DAY[submissionDay] && WINNERS_BY_DAY[submissionDay].size > 0 && (
+                          <div style={{display:'flex', alignItems:'center', gap:8}}>
+                            <span style={{width:10, height:10, borderRadius:2, background:'rgba(74,222,128,.7)', display:'inline-block'}} />
+                            <span style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.04em'}}>WON</span>
+                            <span style={{width:10, height:10, borderRadius:2, background:'rgba(248,113,113,.45)', display:'inline-block', marginLeft:6}} />
+                            <span style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.04em'}}>LOST</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

@@ -24,6 +24,29 @@ function writeJSON(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+// Auto-create data files if they don't exist (first deploy)
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(CONFIG_PATH)) writeJSON(CONFIG_PATH, { currentDay: 'thursday_r1', closedDays: [], adminPin: '2025', buybackDays: ['friday_r1','saturday_r2','sunday_r2'] });
+if (!fs.existsSync(PLAYERS_PATH)) writeJSON(PLAYERS_PATH, []);
+if (!fs.existsSync(GAMES_PATH)) writeJSON(GAMES_PATH, { thursday_r1: [
+  { id:1, home:'Houston', away:'SIU Edwardsville', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:2, home:'Auburn', away:'Alabama State', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:3, home:"St. John's", away:'Omaha', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:4, home:'Tennessee', away:'Wofford', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:5, home:'Wisconsin', away:'Montana', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:6, home:'Texas Tech', away:'UNC Wilmington', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:7, home:'Purdue', away:'High Point', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:8, home:'Texas A&M', away:'Yale', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:9, home:'Michigan', away:'UC San Diego', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:10, home:'Clemson', away:'McNeese State', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:11, home:'BYU', away:'VCU', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:12, home:'Missouri', away:'Drake', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:13, home:'UCLA', away:'Utah State', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:14, home:'Kansas', away:'Arkansas', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:15, home:'Gonzaga', away:'Georgia', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:16, home:'Louisville', away:'Creighton', homeScore:null, awayScore:null, winner:null, final:false }
+]});
+
 /* ────────────────────────────────
    Constants
 ──────────────────────────────── */

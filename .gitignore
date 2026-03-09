@@ -1,1 +1,5 @@
 temporary screenshots/
+Data/players.json
+Data/config.json
+Data/games.json
+node_modules/

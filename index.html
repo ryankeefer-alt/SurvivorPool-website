@@ -617,6 +617,49 @@ function App() {
     });
   };
 
+  // ── Import / Export state ──
+  const [importJSON, setImportJSON] = useState('');
+  const [importMsg, setImportMsg] = useState('');
+  const [importErr, setImportErr] = useState('');
+
+  const handleExport = () => {
+    setImportMsg(''); setImportErr('');
+    fetch('/api/admin/export', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ pin: '___admin___' })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { setImportErr(data.error); return; }
+      setImportJSON(JSON.stringify(data, null, 2));
+      setImportMsg('Data exported. Copy the JSON below as a backup.');
+    })
+    .catch(() => setImportErr('Export failed.'));
+  };
+
+  const handleImport = () => {
+    setImportMsg(''); setImportErr('');
+    var parsed;
+    try { parsed = JSON.parse(importJSON); } catch(e) { setImportErr('Invalid JSON.'); return; }
+    fetch('/api/admin/import', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ pin: '___admin___', players: parsed.players, games: parsed.games, config: parsed.config })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { setImportErr(data.error); return; }
+      setImportMsg('Import successful! Imported: ' +
+        (data.imported.players ? 'players ' : '') +
+        (data.imported.games ? 'games ' : '') +
+        (data.imported.config ? 'config' : ''));
+      setImportJSON('');
+      fetchState();
+    })
+    .catch(() => setImportErr('Import failed.'));
+  };
+
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
@@ -1444,7 +1487,7 @@ function App() {
             </div>
 
             {/* Entries List */}
-            <div className="card anim-up anim-up-4">
+            <div className="card anim-up anim-up-4" style={{marginBottom:20}}>
               <div className="card-header">
                 <div className="card-title">ALL ENTRIES</div>
                 <span className="badge badge-pending">{players.length} TOTAL</span>
@@ -1480,6 +1523,52 @@ function App() {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+
+            {/* Import / Export */}
+            <div className="card anim-up anim-up-5">
+              <div className="card-header">
+                <div className="card-title">IMPORT / EXPORT DATA</div>
+              </div>
+              <div style={{padding:'22px'}}>
+                <div style={{fontSize:13, color:'var(--muted)', marginBottom:16, lineHeight:1.6}}>
+                  Export current data as JSON backup, or paste a previous export to restore picks, games, and config.
+                </div>
+
+                <div style={{display:'flex', gap:10, marginBottom:16}}>
+                  <button className="btn btn-gold" onClick={handleExport}>
+                    Export Current Data
+                  </button>
+                  <button className="btn btn-primary" onClick={handleImport} disabled={!importJSON.trim()}>
+                    Import Data
+                  </button>
+                </div>
+
+                {importMsg && (
+                  <div style={{color:'var(--success)', fontSize:13, marginBottom:12, padding:'10px 14px',
+                               background:'rgba(74,222,128,.08)', border:'1px solid rgba(74,222,128,.2)', borderRadius:8}}>
+                    {importMsg}
+                  </div>
+                )}
+                {importErr && (
+                  <div style={{color:'var(--danger)', fontSize:13, marginBottom:12, padding:'10px 14px',
+                               background:'rgba(248,113,113,.08)', border:'1px solid rgba(248,113,113,.2)', borderRadius:8}}>
+                    {importErr}
+                  </div>
+                )}
+
+                <textarea
+                  className="form-input"
+                  value={importJSON}
+                  onChange={e => setImportJSON(e.target.value)}
+                  placeholder={'Paste JSON here to import, or click Export to fill this with current data...\n\nFormat:\n{\n  "players": [...],\n  "games": {...},\n  "config": { "currentDay": "...", "closedDays": [...] }\n}'}
+                  style={{
+                    width:'100%', minHeight:200, fontFamily:'Courier Prime, monospace',
+                    fontSize:12, lineHeight:1.5, resize:'vertical',
+                    background:'var(--raised)', color:'var(--text)',
+                  }}
+                />
               </div>
             </div>
           </div>

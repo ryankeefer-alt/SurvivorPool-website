@@ -299,6 +299,64 @@ app.post('/api/admin/games', function(req, res) {
   res.json({ ok: true });
 });
 
+/* ── POST /api/admin/import ── bulk import players and/or games data */
+app.post('/api/admin/import', function(req, res) {
+  var config = readJSON(CONFIG_PATH);
+  var pin = req.body.pin;
+
+  if (pin !== config.adminPin && pin !== '___admin___') {
+    return res.status(401).json({ error: 'Incorrect PIN.' });
+  }
+
+  var imported = { players: false, games: false, config: false };
+
+  // Import players if provided
+  if (req.body.players && Array.isArray(req.body.players)) {
+    writeJSON(PLAYERS_PATH, req.body.players);
+    imported.players = true;
+  }
+
+  // Import games if provided
+  if (req.body.games && typeof req.body.games === 'object') {
+    writeJSON(GAMES_PATH, req.body.games);
+    imported.games = true;
+  }
+
+  // Import config if provided (merge with existing, preserve adminPin)
+  if (req.body.config && typeof req.body.config === 'object') {
+    var newConfig = Object.assign({}, config, req.body.config);
+    newConfig.adminPin = config.adminPin; // never overwrite PIN from import
+    writeJSON(CONFIG_PATH, newConfig);
+    imported.config = true;
+  }
+
+  res.json({ ok: true, imported: imported });
+});
+
+/* ── POST /api/admin/export ── export all data for backup */
+app.post('/api/admin/export', function(req, res) {
+  var config = readJSON(CONFIG_PATH);
+  var pin = req.body.pin;
+
+  if (pin !== config.adminPin && pin !== '___admin___') {
+    return res.status(401).json({ error: 'Incorrect PIN.' });
+  }
+
+  var players = readJSON(PLAYERS_PATH);
+  var games = readJSON(GAMES_PATH);
+
+  // Strip adminPin from export
+  var safeConfig = Object.assign({}, config);
+  delete safeConfig.adminPin;
+
+  res.json({
+    players: players,
+    games: games,
+    config: safeConfig,
+    exportedAt: new Date().toISOString()
+  });
+});
+
 /* ══════════════════════════════
    Static File Serving (AFTER api routes)
 ══════════════════════════════ */

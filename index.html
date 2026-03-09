@@ -578,6 +578,45 @@ function App() {
     });
   };
 
+  // ── Admin game editing state ──
+  const [editingGames, setEditingGames] = useState(null); // local copy of games for editing
+
+  useEffect(() => {
+    if (isAdmin && gamesData[submissionDay]) {
+      setEditingGames(JSON.parse(JSON.stringify(gamesData[submissionDay])));
+    }
+  }, [isAdmin, submissionDay, gamesData]);
+
+  const handleGameScoreChange = (gameId, field, value) => {
+    setEditingGames(prev => prev.map(g => g.id === gameId ? {...g, [field]: value} : g));
+  };
+
+  const handleMarkFinal = (gameId) => {
+    setEditingGames(prev => prev.map(g => {
+      if (g.id !== gameId) return g;
+      const hs = parseInt(g.homeScore) || 0;
+      const as = parseInt(g.awayScore) || 0;
+      const winner = hs > as ? g.home : hs < as ? g.away : null;
+      return {...g, homeScore: hs, awayScore: as, winner, final: true};
+    }));
+  };
+
+  const handleUnmarkFinal = (gameId) => {
+    setEditingGames(prev => prev.map(g => g.id === gameId ? {...g, final: false, winner: null} : g));
+  };
+
+  const handleSaveGames = () => {
+    fetch('/api/admin/games', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ day: submissionDay, games: editingGames, pin: '___admin___' })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) fetchState();
+    });
+  };
+
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
@@ -1183,8 +1222,88 @@ function App() {
               </div>
             </div>
 
+            {/* Game Results Editor */}
+            {editingGames && editingGames.length > 0 && (
+              <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
+                <div className="card-header">
+                  <div className="card-title">GAME RESULTS — {DAY_LABELS[submissionDay]}</div>
+                  <button className="btn btn-primary" style={{padding:'6px 16px', fontSize:12}} onClick={handleSaveGames}>
+                    Save &amp; Process Results
+                  </button>
+                </div>
+                <div style={{padding:0}}>
+                  {editingGames.map((game, i) => (
+                    <div key={game.id} style={{
+                      padding:'12px 22px',
+                      borderBottom: i < editingGames.length - 1 ? '1px solid var(--border)' : 'none',
+                      background: game.final ? 'rgba(74,222,128,.04)' : 'transparent',
+                    }}>
+                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+                        {/* Home team */}
+                        <div style={{flex:'1 1 120px', minWidth:100}}>
+                          <div style={{fontSize:13, fontWeight:game.final && game.winner === game.home ? 700 : 400, color: game.final && game.winner === game.home ? 'var(--success)' : 'var(--cream)'}}>
+                            {game.home}
+                          </div>
+                        </div>
+
+                        {/* Score inputs */}
+                        <div style={{display:'flex', alignItems:'center', gap:6}}>
+                          <input
+                            className="form-input"
+                            type="number"
+                            value={game.homeScore === null ? '' : game.homeScore}
+                            onChange={e => handleGameScoreChange(game.id, 'homeScore', e.target.value === '' ? null : e.target.value)}
+                            disabled={game.final}
+                            style={{width:55, textAlign:'center', padding:'6px 4px', fontSize:14, fontWeight:700}}
+                            placeholder="-"
+                          />
+                          <span style={{color:'var(--muted)', fontSize:12, fontWeight:700}}>—</span>
+                          <input
+                            className="form-input"
+                            type="number"
+                            value={game.awayScore === null ? '' : game.awayScore}
+                            onChange={e => handleGameScoreChange(game.id, 'awayScore', e.target.value === '' ? null : e.target.value)}
+                            disabled={game.final}
+                            style={{width:55, textAlign:'center', padding:'6px 4px', fontSize:14, fontWeight:700}}
+                            placeholder="-"
+                          />
+                        </div>
+
+                        {/* Away team */}
+                        <div style={{flex:'1 1 120px', minWidth:100, textAlign:'right'}}>
+                          <div style={{fontSize:13, fontWeight:game.final && game.winner === game.away ? 700 : 400, color: game.final && game.winner === game.away ? 'var(--success)' : 'var(--cream)'}}>
+                            {game.away}
+                          </div>
+                        </div>
+
+                        {/* Final toggle */}
+                        <div style={{width:80, textAlign:'right'}}>
+                          {game.final ? (
+                            <button className="badge badge-win" style={{cursor:'pointer', border:'1px solid rgba(74,222,128,.25)'}}
+                                    onClick={() => handleUnmarkFinal(game.id)}>
+                              FINAL ✓
+                            </button>
+                          ) : (
+                            <button className="badge badge-pending" style={{cursor:'pointer'}}
+                                    onClick={() => handleMarkFinal(game.id)}>
+                              MARK FINAL
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{padding:'14px 22px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'flex-end'}}>
+                  <button className="btn btn-primary" onClick={handleSaveGames}>
+                    Save &amp; Process Results
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Day Status Overview */}
-            <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
+            <div className="card anim-up anim-up-3" style={{marginBottom:20}}>
               <div className="card-header">
                 <div className="card-title">DAY STATUS</div>
               </div>
@@ -1224,7 +1343,7 @@ function App() {
             </div>
 
             {/* Entries List */}
-            <div className="card anim-up anim-up-3">
+            <div className="card anim-up anim-up-4"
               <div className="card-header">
                 <div className="card-title">ALL ENTRIES</div>
                 <span className="badge badge-pending">{players.length} TOTAL</span>

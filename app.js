@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -8,8 +9,11 @@ app.use(express.json());
 
 /* ────────────────────────────────
    Data file paths
+   Store data in home directory so it survives Hostinger deploys.
+   The git deploy replaces the app directory, but ~/survivorpool-data persists.
+   Override with DATA_DIR env var if needed.
 ──────────────────────────────── */
-const DATA_DIR = path.join(__dirname, 'Data');
+const DATA_DIR = process.env.DATA_DIR || path.join(os.homedir(), 'survivorpool-data');
 const CONFIG_PATH = path.join(DATA_DIR, 'config.json');
 const PLAYERS_PATH = path.join(DATA_DIR, 'players.json');
 const GAMES_PATH = path.join(DATA_DIR, 'games.json');
@@ -313,4 +317,10 @@ app.get('*', function(req, res) {
 app.listen(PORT, function() {
   console.log('Server running on port ' + PORT);
   console.log('Data directory: ' + DATA_DIR);
+  console.log('App directory: ' + __dirname);
+  console.log('Home directory: ' + os.homedir());
+  // Log whether data files existed or were freshly created
+  console.log('Config exists: ' + fs.existsSync(CONFIG_PATH));
+  console.log('Players exists: ' + fs.existsSync(PLAYERS_PATH));
+  console.log('Games exists: ' + fs.existsSync(GAMES_PATH));
 });

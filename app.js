@@ -68,6 +68,12 @@ const PICKS_PER_DAY = {
   saturday_ff: 1, monday_champ: 1,
 };
 
+const BUYBACK_PICKS = {
+  friday_r1: 4,
+  saturday_r2: 3,
+  sunday_r2: 3,
+};
+
 const TEAMS_BY_DAY = {
   thursday_r1: [
     'Alabama State','Arkansas','Auburn','BYU','Clemson','Creighton','Drake',
@@ -94,12 +100,29 @@ app.get('/api/state', function(req, res) {
   var safeConfig = Object.assign({}, config);
   delete safeConfig.adminPin;
 
+  // Derive teams from games data (so imported games auto-populate team lists)
+  var teams = {};
+  Object.keys(TEAMS_BY_DAY).forEach(function(day) {
+    teams[day] = TEAMS_BY_DAY[day];
+  });
+  Object.keys(games).forEach(function(day) {
+    if (games[day] && games[day].length > 0) {
+      var dayTeams = [];
+      games[day].forEach(function(g) {
+        if (g.home && dayTeams.indexOf(g.home) === -1) dayTeams.push(g.home);
+        if (g.away && dayTeams.indexOf(g.away) === -1) dayTeams.push(g.away);
+      });
+      teams[day] = dayTeams.sort();
+    }
+  });
+
   res.json({
     config: safeConfig,
     players: players,
     games: games,
-    teams: TEAMS_BY_DAY,
+    teams: teams,
     picksPerDay: PICKS_PER_DAY,
+    buybackPicks: BUYBACK_PICKS,
     dayOrder: DAY_ORDER
   });
 });
@@ -119,11 +142,6 @@ app.post('/api/picks', function(req, res) {
   // Check if day is closed
   if (config.closedDays && config.closedDays.indexOf(day) !== -1) {
     return res.status(400).json({ error: 'Entries for this day are closed.' });
-  }
-
-  var requiredPicks = PICKS_PER_DAY[day] || 1;
-  if (picks.length !== requiredPicks) {
-    return res.status(400).json({ error: 'Exactly ' + requiredPicks + ' pick(s) required.' });
   }
 
   // Check for duplicate teams in submission
@@ -150,6 +168,11 @@ app.post('/api/picks', function(req, res) {
 
   if (day === 'thursday_r1') {
     // Thursday: create new entry
+    var requiredPicks = PICKS_PER_DAY[day] || 2;
+    if (picks.length !== requiredPicks) {
+      return res.status(400).json({ error: 'Exactly ' + requiredPicks + ' pick(s) required.' });
+    }
+
     var existing = players.find(function(p) { return p.name.toLowerCase() === name.trim().toLowerCase(); });
     if (existing) {
       return res.status(400).json({ error: 'That name has already been submitted.' });
@@ -189,6 +212,26 @@ app.post('/api/picks', function(req, res) {
       return res.status(400).json({ error: 'You already submitted picks for this day.' });
     }
 
+    // Determine required picks (buyback players need more)
+    var requiredPicks2 = (player.needsBuyback && BUYBACK_PICKS[day])
+      ? BUYBACK_PICKS[day]
+      : (PICKS_PER_DAY[day] || 1);
+    if (picks.length !== requiredPicks2) {
+      return res.status(400).json({ error: 'Exactly ' + requiredPicks2 + ' pick(s) required.' });
+    }
+
+    // Check for team reuse across all previous days
+    var allUsedTeams = [];
+    Object.values(player.picks).forEach(function(dayPicks) {
+      dayPicks.forEach(function(t) {
+        if (allUsedTeams.indexOf(t) === -1) allUsedTeams.push(t);
+      });
+    });
+    var reused = picks.filter(function(t) { return allUsedTeams.indexOf(t) !== -1; });
+    if (reused.length > 0) {
+      return res.status(400).json({ error: 'Cannot reuse teams: ' + reused.join(', ') });
+    }
+
     var result2 = 'pending';
     if (hasResults) {
       var allWon2 = picks.every(function(t) { return dayWinners.indexOf(t) !== -1; });
@@ -199,6 +242,10 @@ app.post('/api/picks', function(req, res) {
     player.results[day] = result2;
     if (result2 === 'loss') {
       player.status = 'eliminated';
+    }
+    // Clear buyback flag after successful submission
+    if (player.needsBuyback) {
+      player.needsBuyback = false;
     }
   }
 
@@ -297,6 +344,38 @@ app.post('/api/admin/games', function(req, res) {
   }
 
   res.json({ ok: true });
+});
+
+/* ── POST /api/buyback ── player buys back into the pool */
+app.post('/api/buyback', function(req, res) {
+  var config = readJSON(CONFIG_PATH);
+  var name = req.body.name;
+
+  if (!name) return res.status(400).json({ error: 'Name is required.' });
+
+  var players = readJSON(PLAYERS_PATH);
+  var player = players.find(function(p) { return p.name.toLowerCase() === name.trim().toLowerCase(); });
+
+  if (!player) return res.status(404).json({ error: 'Player not found.' });
+  if (player.status !== 'eliminated') return res.status(400).json({ error: 'You are not eliminated.' });
+  if (player.buybacks >= 3) return res.status(400).json({ error: 'Maximum buybacks (3) reached.' });
+
+  var buybackDays = config.buybackDays || ['friday_r1', 'saturday_r2', 'sunday_r2'];
+  if (buybackDays.indexOf(config.currentDay) === -1) {
+    return res.status(400).json({ error: 'No buybacks allowed for this round.' });
+  }
+
+  if (config.closedDays && config.closedDays.indexOf(config.currentDay) !== -1) {
+    return res.status(400).json({ error: 'Entries are closed. Cannot buy back right now.' });
+  }
+
+  player.status = 'alive';
+  player.buybacks += 1;
+  player.needsBuyback = true;
+  player.totalSpent += 25;
+
+  writeJSON(PLAYERS_PATH, players);
+  res.json({ ok: true, buybacks: player.buybacks, totalSpent: player.totalSpent });
 });
 
 /* ── POST /api/admin/delete-player ── remove a player entry */

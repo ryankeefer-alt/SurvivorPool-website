@@ -412,6 +412,14 @@ const PICKS_PER_DAY = {
   saturday_ff: 1, monday_champ: 1,
 };
 
+const BUYBACK_PICKS = {
+  friday_r1: 4,
+  saturday_r2: 3,
+  sunday_r2: 3,
+};
+
+const BUYBACK_DAYS = new Set(['friday_r1', 'saturday_r2', 'sunday_r2']);
+
 const RULES_DATA = [
   {
     id:'r1', day:`Thursday R1`, color:'orange',
@@ -573,6 +581,25 @@ function App() {
     });
   };
 
+  const handleBuyback = (playerName) => {
+    if (!confirm(`Buy back in as "${playerName}" for $25? This adds $25 to the pot.`)) return;
+    fetch('/api/buyback', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name: playerName })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        fetchState();
+        setActiveTab('picks');
+      } else if (data.error) {
+        alert(data.error);
+      }
+    })
+    .catch(() => alert('Network error'));
+  };
+
   const handleAdvanceDay = () => {
     fetch('/api/admin/advance-day', {
       method: 'POST',
@@ -626,9 +653,16 @@ function App() {
     })
     .then(r => r.json())
     .then(data => {
-      if (data.ok) fetchState();
+      if (data.ok) {
+        setSaveNotification('Saved!');
+        setTimeout(() => setSaveNotification(''), 3000);
+        fetchState();
+      }
     });
   };
+
+  // ── Save notification state ──
+  const [saveNotification, setSaveNotification] = useState('');
 
   // ── Import / Export state ──
   const [importJSON, setImportJSON] = useState('');
@@ -673,6 +707,17 @@ function App() {
     .catch(() => setImportErr('Import failed.'));
   };
 
+  const handleImportFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setImportJSON(ev.target.result);
+      setImportMsg('File loaded: ' + file.name + '. Click Import Data to apply.');
+    };
+    reader.readAsText(file);
+  };
+
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
@@ -705,7 +750,35 @@ function App() {
   const [submitting,      setSubmitting]      = useState(false);
 
   const currentTeams = teamsData[submissionDay] || [];
-  const requiredPicks = PICKS_PER_DAY[submissionDay] || 1;
+  const pastFirstDay = DAY_ORDER.indexOf(submissionDay) > 0;
+
+  // Look up the current player to detect buyback status and used teams
+  const matchedPlayer = useMemo(() => {
+    if (!pickerName.trim() || submissionDay === 'thursday_r1') return null;
+    return players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
+  }, [pickerName, players, submissionDay]);
+
+  const requiredPicks = useMemo(() => {
+    if (matchedPlayer && matchedPlayer.needsBuyback && BUYBACK_PICKS[submissionDay]) {
+      return BUYBACK_PICKS[submissionDay];
+    }
+    return PICKS_PER_DAY[submissionDay] || 1;
+  }, [matchedPlayer, submissionDay]);
+
+  // Teams the matched player already used in previous days (cannot reuse)
+  const usedTeams = useMemo(() => {
+    if (!matchedPlayer) return [];
+    const used = [];
+    Object.values(matchedPlayer.picks || {}).forEach(dayPicks => {
+      dayPicks.forEach(t => { if (used.indexOf(t) === -1) used.push(t); });
+    });
+    return used;
+  }, [matchedPlayer]);
+
+  // Available teams = current day teams minus already-used teams
+  const availableTeams = useMemo(() => {
+    return currentTeams.filter(t => usedTeams.indexOf(t) === -1);
+  }, [currentTeams, usedTeams]);
 
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
@@ -915,7 +988,7 @@ function App() {
                   </button>
                 </div>
               </div>
-            ) : !entriesClosed ? (
+            ) : (!entriesClosed && !pastFirstDay) ? (
               <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
                 <div className="card-header">
                   <div className="card-title">Entries</div>
@@ -939,18 +1012,41 @@ function App() {
               </div>
             ) : (
               <div>
+                {/* Open entries banner when past first day */}
+                {pastFirstDay && !entriesClosed && (
+                  <div style={{
+                    background:'rgba(244,99,31,.08)', border:'1px solid rgba(244,99,31,.25)',
+                    borderRadius:10, padding:'14px 18px', marginBottom:16,
+                    display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10,
+                  }}>
+                    <div>
+                      <div style={{fontWeight:700, color:'var(--accent)', fontSize:13, letterSpacing:'0.05em', textTransform:'uppercase'}}>
+                        {DAY_FULL[submissionDay]} — Entries Open
+                      </div>
+                      <div style={{fontSize:12, color:'var(--muted)', marginTop:2}}>
+                        Submit your picks before the admin locks entries.
+                      </div>
+                    </div>
+                    <button className="btn btn-primary" style={{padding:'8px 18px', fontSize:13}} onClick={() => handleTabChange('picks')}>
+                      Submit Picks
+                    </button>
+                  </div>
+                )}
+
                 {/* Still In It */}
                 <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
                   <div className="card-header">
                     <div className="card-title" style={{color:'var(--success)'}}>Still In It</div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <span className="badge badge-alive">{alivePlayers.length}</span>
-                      <span className="badge badge-out" style={{fontSize:10}}>Entries Locked</span>
+                      <span className={`badge ${entriesClosed ? 'badge-out' : 'badge-pending'}`} style={{fontSize:10}}>
+                        {entriesClosed ? 'Entries Locked' : 'Entries Open'}
+                      </span>
                     </div>
                   </div>
                   {alivePlayers.length === 0 ? (
                     <div style={{padding:'24px 22px', textAlign:'center', color:'var(--muted)', fontSize:13}}>
-                      No one survived Thursday!
+                      No one survived!
                     </div>
                   ) : (
                     [...alivePlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
@@ -959,6 +1055,9 @@ function App() {
                           <div style={{display:'flex', alignItems:'center', gap:8}}>
                             <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
                             <span className="badge badge-alive" style={{fontSize:9}}>ALIVE</span>
+                            {p.needsBuyback && (
+                              <span className="badge badge-buyback" style={{fontSize:9}}>BUYBACK — NEEDS PICKS</span>
+                            )}
                           </div>
                         </div>
                         <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
@@ -988,11 +1087,25 @@ function App() {
                             <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
                           </div>
                         </div>
-                        <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                          {Object.entries(p.picks).map(([day, picks]) =>
-                            picks.map(t => (
-                              <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
-                            ))
+                        <div style={{display:'flex', alignItems:'center', gap:8}}>
+                          <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
+                            {Object.entries(p.picks).map(([day, picks]) =>
+                              picks.map(t => (
+                                <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
+                              ))
+                            )}
+                          </div>
+                          {!entriesClosed && BUYBACK_DAYS.has(submissionDay) && p.buybacks < 3 && (
+                            <button
+                              onClick={() => handleBuyback(p.name)}
+                              style={{
+                                background:'rgba(255,184,0,.12)', border:'1px solid rgba(255,184,0,.3)',
+                                color:'var(--gold)', borderRadius:6, padding:'5px 12px', fontSize:11,
+                                cursor:'pointer', fontWeight:700, letterSpacing:'0.04em', whiteSpace:'nowrap',
+                              }}
+                              onMouseOver={e => { e.currentTarget.style.background='rgba(255,184,0,.22)'; }}
+                              onMouseOut={e => { e.currentTarget.style.background='rgba(255,184,0,.12)'; }}
+                            >BUY BACK — $25</button>
                           )}
                         </div>
                       </div>
@@ -1225,7 +1338,7 @@ function App() {
 
                 <div className="card" style={{padding:'24px 26px', marginBottom:20}}>
                   <div className="anton" style={{fontSize:18, color:'var(--cream)', letterSpacing:'0.05em', marginBottom:18}}>
-                    SUBMIT YOUR PICKS
+                    {matchedPlayer && matchedPlayer.needsBuyback ? 'BUYBACK — SUBMIT YOUR PICKS' : 'SUBMIT YOUR PICKS'}
                   </div>
 
                   <div style={{marginBottom:16}}>
@@ -1233,6 +1346,25 @@ function App() {
                     <input className="form-input" placeholder="Enter your name"
                            value={pickerName} onChange={e => setPickerName(e.target.value)} />
                   </div>
+
+                  {/* Buyback info banner */}
+                  {matchedPlayer && matchedPlayer.needsBuyback && (
+                    <div style={{
+                      background:'rgba(255,184,0,.1)', border:'1px solid rgba(255,184,0,.3)',
+                      borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:13, color:'var(--gold)', lineHeight:1.5,
+                    }}>
+                      ⚡ Buyback active — you need <strong>{requiredPicks} picks</strong> this round. All must win. No team reuse from previous rounds.
+                    </div>
+                  )}
+
+                  {/* Used teams warning */}
+                  {usedTeams.length > 0 && (
+                    <div style={{fontSize:12, color:'var(--muted)', marginBottom:12}}>
+                      Teams already used: {usedTeams.map(t => (
+                        <span key={t} className="badge badge-out" style={{fontSize:9, marginLeft:4}}>{t}</span>
+                      ))}
+                    </div>
+                  )}
 
                   {Array.from({length: requiredPicks}, (_, idx) => (
                     <div key={idx} style={{marginBottom:14}}>
@@ -1244,7 +1376,7 @@ function App() {
                                 setTeamPicks(newPicks);
                               }}>
                         <option value="">Select team...</option>
-                        {currentTeams.filter(t => !teamPicks.includes(t) || teamPicks[idx] === t).map(t =>
+                        {availableTeams.filter(t => !teamPicks.includes(t) || teamPicks[idx] === t).map(t =>
                           <option key={t} value={t}>{t}</option>
                         )}
                       </select>
@@ -1260,7 +1392,11 @@ function App() {
 
                   <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8, opacity: submitting ? 0.6 : 1}}
                           onClick={handleSubmitPicks} disabled={submitting}>
-                    {submitting ? 'Submitting...' : (submissionDay === 'thursday_r1' ? 'Lock In Picks — $25 Entry' : 'Lock In Picks')}
+                    {submitting ? 'Submitting...' : (
+                      submissionDay === 'thursday_r1' ? 'Lock In Picks — $25 Entry' :
+                      matchedPlayer && matchedPlayer.needsBuyback ? `Lock In ${requiredPicks} Buyback Picks` :
+                      'Lock In Picks'
+                    )}
                   </button>
                 </div>
 
@@ -1447,7 +1583,14 @@ function App() {
                     </div>
                   ))}
                 </div>
-                <div style={{padding:'14px 22px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'flex-end'}}>
+                <div style={{padding:'14px 22px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'flex-end', alignItems:'center', gap:12}}>
+                  {saveNotification && (
+                    <span style={{
+                      color:'var(--success)', fontSize:14, fontWeight:700,
+                      padding:'6px 14px', background:'rgba(74,222,128,.1)',
+                      border:'1px solid rgba(74,222,128,.25)', borderRadius:6,
+                    }}>✓ {saveNotification}</span>
+                  )}
                   <button className="btn btn-primary" onClick={handleSaveGames}>
                     Save &amp; Process Results
                   </button>
@@ -1554,13 +1697,17 @@ function App() {
               </div>
               <div style={{padding:'22px'}}>
                 <div style={{fontSize:13, color:'var(--muted)', marginBottom:16, lineHeight:1.6}}>
-                  Export current data as JSON backup, or paste a previous export to restore picks, games, and config.
+                  Export current data as JSON backup, or import a JSON file with games for the next day. You can also paste JSON manually.
                 </div>
 
-                <div style={{display:'flex', gap:10, marginBottom:16}}>
+                <div style={{display:'flex', gap:10, marginBottom:16, flexWrap:'wrap'}}>
                   <button className="btn btn-gold" onClick={handleExport}>
                     Export Current Data
                   </button>
+                  <label className="btn btn-ghost" style={{cursor:'pointer'}}>
+                    📁 Load JSON File
+                    <input type="file" accept=".json" style={{display:'none'}} onChange={handleImportFile} />
+                  </label>
                   <button className="btn btn-primary" onClick={handleImport} disabled={!importJSON.trim()}>
                     Import Data
                   </button>

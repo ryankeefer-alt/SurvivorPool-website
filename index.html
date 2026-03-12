@@ -560,6 +560,19 @@ function App() {
     });
   };
 
+  const handleDeletePlayer = (playerId, playerName) => {
+    if (!confirm(`Delete entry for "${playerName}"? This cannot be undone.`)) return;
+    fetch('/api/admin/delete-player', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ playerId, pin: '___admin___' })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) fetchState();
+    });
+  };
+
   const handleAdvanceDay = () => {
     fetch('/api/admin/advance-day', {
       method: 'POST',
@@ -942,13 +955,11 @@ function App() {
                   ) : (
                     [...alivePlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
                       <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`}}>
-                        <Avatar name={p.name} size={34} />
                         <div style={{flex:1}}>
                           <div style={{display:'flex', alignItems:'center', gap:8}}>
                             <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
                             <span className="badge badge-alive" style={{fontSize:9}}>ALIVE</span>
                           </div>
-                          <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>$25 entry</div>
                         </div>
                         <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
                           {Object.entries(p.picks).map(([day, picks]) =>
@@ -971,13 +982,11 @@ function App() {
                     </div>
                     {[...eliminatedPlayers].sort((a,b) => a.name.localeCompare(b.name)).map((p, i) => (
                       <div key={p.id} className="player-row" style={{animationDelay: `${(i+3)*60}ms`, opacity:0.7}}>
-                        <Avatar name={p.name} size={34} />
                         <div style={{flex:1}}>
                           <div style={{display:'flex', alignItems:'center', gap:8}}>
                             <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
                             <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
                           </div>
-                          <div style={{fontSize:12, color:'var(--muted)', marginTop:1}}>$25 entry</div>
                         </div>
                         <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
                           {Object.entries(p.picks).map(([day, picks]) =>
@@ -1507,7 +1516,19 @@ function App() {
                             {player.status}
                           </span>
                         </div>
-                        <span className="mono" style={{fontSize:12, color:'var(--gold)'}}>${player.totalSpent}</span>
+                        <div style={{display:'flex', alignItems:'center', gap:8}}>
+                          <span className="mono" style={{fontSize:12, color:'var(--gold)'}}>${player.totalSpent}</span>
+                          <button
+                            onClick={() => handleDeletePlayer(player.id, player.name)}
+                            style={{
+                              background:'rgba(248,113,113,.1)', border:'1px solid rgba(248,113,113,.25)',
+                              color:'var(--danger)', borderRadius:6, padding:'3px 8px', fontSize:11,
+                              cursor:'pointer', fontWeight:600, letterSpacing:'0.03em',
+                            }}
+                            onMouseOver={e => { e.currentTarget.style.background='rgba(248,113,113,.2)'; }}
+                            onMouseOut={e => { e.currentTarget.style.background='rgba(248,113,113,.1)'; }}
+                          >✕ DELETE</button>
+                        </div>
                       </div>
                       {Object.keys(player.picks || {}).length > 0 && (
                         <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>

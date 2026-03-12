@@ -299,6 +299,32 @@ app.post('/api/admin/games', function(req, res) {
   res.json({ ok: true });
 });
 
+/* ── POST /api/admin/delete-player ── remove a player entry */
+app.post('/api/admin/delete-player', function(req, res) {
+  var config = readJSON(CONFIG_PATH);
+  var pin = req.body.pin;
+
+  if (pin !== config.adminPin && pin !== '___admin___') {
+    return res.status(401).json({ error: 'Incorrect PIN.' });
+  }
+
+  var playerId = req.body.playerId;
+  if (!playerId) {
+    return res.status(400).json({ error: 'Missing playerId.' });
+  }
+
+  var players = readJSON(PLAYERS_PATH);
+  var before = players.length;
+  players = players.filter(function(p) { return p.id !== playerId; });
+
+  if (players.length === before) {
+    return res.status(404).json({ error: 'Player not found.' });
+  }
+
+  writeJSON(PLAYERS_PATH, players);
+  res.json({ ok: true, remaining: players.length });
+});
+
 /* ── POST /api/admin/import ── bulk import players and/or games data */
 app.post('/api/admin/import', function(req, res) {
   var config = readJSON(CONFIG_PATH);

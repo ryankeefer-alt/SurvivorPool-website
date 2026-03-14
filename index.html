@@ -719,8 +719,8 @@ function App() {
     reader.readAsText(file);
   };
 
-  const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive' && !p.needsBuyback), [players]);
-  const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated' || (p.status === 'alive' && p.needsBuyback)), [players]);
+  const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
+  const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
   // ── Pick distribution for bar chart (only computed when entries are closed) ──
   const pickDistribution = useMemo(() => {
@@ -1056,9 +1056,6 @@ function App() {
                           <div style={{display:'flex', alignItems:'center', gap:8}}>
                             <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
                             <span className="badge badge-alive" style={{fontSize:9}}>ALIVE</span>
-                            {p.needsBuyback && (
-                              <span className="badge badge-buyback" style={{fontSize:9}}>BUYBACK — NEEDS PICKS</span>
-                            )}
                           </div>
                         </div>
                         <div style={{display:'flex', alignItems:'center', gap:8}}>
@@ -1099,11 +1096,7 @@ function App() {
                         <div style={{flex:1}}>
                           <div style={{display:'flex', alignItems:'center', gap:8}}>
                             <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
-                            {p.needsBuyback ? (
-                              <span className="badge badge-buyback" style={{fontSize:9}}>BOUGHT BACK — NEEDS PICKS</span>
-                            ) : (
-                              <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
-                            )}
+                            <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
                           </div>
                         </div>
                         <div style={{display:'flex', alignItems:'center', gap:8}}>

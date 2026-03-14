@@ -205,7 +205,7 @@ app.post('/api/picks', function(req, res) {
     if (!player) {
       return res.status(400).json({ error: 'Entry not found. Check your name matches your original entry.' });
     }
-    if (player.status === 'eliminated') {
+    if (player.status === 'eliminated' && !player.needsBuyback) {
       return res.status(400).json({ error: 'You have been eliminated.' });
     }
     if (player.picks[day]) {
@@ -243,9 +243,10 @@ app.post('/api/picks', function(req, res) {
     if (result2 === 'loss') {
       player.status = 'eliminated';
     }
-    // Finalize buyback: charge $25 and increment counter on actual pick submission
+    // Finalize buyback: resurrect player, charge $25, increment counter
     if (player.needsBuyback) {
       player.needsBuyback = false;
+      player.status = result2 === 'loss' ? 'eliminated' : 'alive';
       player.buybacks += 1;
       player.totalSpent += 25;
     }
@@ -360,6 +361,7 @@ app.post('/api/buyback', function(req, res) {
 
   if (!player) return res.status(404).json({ error: 'Player not found.' });
   if (player.status !== 'eliminated') return res.status(400).json({ error: 'You are not eliminated.' });
+  if (player.needsBuyback) return res.status(400).json({ error: 'You already initiated a buyback. Submit your picks to complete it.' });
   if (player.buybacks >= 3) return res.status(400).json({ error: 'Maximum buybacks (3) reached.' });
 
   var buybackDays = config.buybackDays || ['friday_r1', 'saturday_r2', 'sunday_r2'];
@@ -371,7 +373,7 @@ app.post('/api/buyback', function(req, res) {
     return res.status(400).json({ error: 'Entries are closed. Cannot buy back right now.' });
   }
 
-  player.status = 'alive';
+  // Don't change status yet — player stays eliminated until they submit picks
   player.needsBuyback = true;
 
   writeJSON(PLAYERS_PATH, players);

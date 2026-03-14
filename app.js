@@ -421,9 +421,13 @@ app.post('/api/admin/import', function(req, res) {
     imported.players = true;
   }
 
-  // Import games if provided
+  // Import games if provided (merge with existing, don't overwrite other days)
   if (req.body.games && typeof req.body.games === 'object') {
-    writeJSON(GAMES_PATH, req.body.games);
+    var existingGames = readJSON(GAMES_PATH);
+    Object.keys(req.body.games).forEach(function(day) {
+      existingGames[day] = req.body.games[day];
+    });
+    writeJSON(GAMES_PATH, existingGames);
     imported.games = true;
   }
 

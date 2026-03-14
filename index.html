@@ -592,6 +592,7 @@ function App() {
     .then(data => {
       if (data.ok) {
         fetchState();
+        setPickerName(playerName);
         setActiveTab('picks');
       } else if (data.error) {
         alert(data.error);
@@ -718,8 +719,8 @@ function App() {
     reader.readAsText(file);
   };
 
-  const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
-  const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
+  const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive' && !p.needsBuyback), [players]);
+  const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated' || (p.status === 'alive' && p.needsBuyback)), [players]);
 
   // ── Pick distribution for bar chart (only computed when entries are closed) ──
   const pickDistribution = useMemo(() => {
@@ -1062,7 +1063,7 @@ function App() {
                         </div>
                         <div style={{display:'flex', alignItems:'center', gap:8}}>
                           <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                            {Object.entries(p.picks).map(([day, picks]) =>
+                            {Object.entries(p.picks).filter(([day]) => day !== submissionDay || entriesClosed).map(([day, picks]) =>
                               picks.map(t => (
                                 <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
                               ))
@@ -1098,18 +1099,33 @@ function App() {
                         <div style={{flex:1}}>
                           <div style={{display:'flex', alignItems:'center', gap:8}}>
                             <span style={{fontWeight:700, color:'var(--cream)', fontSize:15}}>{p.name}</span>
-                            <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
+                            {p.needsBuyback ? (
+                              <span className="badge badge-buyback" style={{fontSize:9}}>BOUGHT BACK — NEEDS PICKS</span>
+                            ) : (
+                              <span className="badge badge-out" style={{fontSize:9}}>OUT</span>
+                            )}
                           </div>
                         </div>
                         <div style={{display:'flex', alignItems:'center', gap:8}}>
                           <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                            {Object.entries(p.picks).map(([day, picks]) =>
+                            {Object.entries(p.picks).filter(([day]) => day !== submissionDay || entriesClosed).map(([day, picks]) =>
                               picks.map(t => (
                                 <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
                               ))
                             )}
                           </div>
-                          {!entriesClosed && BUYBACK_DAYS.has(submissionDay) && p.buybacks < 3 && (
+                          {p.needsBuyback ? (
+                            <button
+                              onClick={() => { setPickerName(p.name); setTeamPicks([]); setSubmitted(false); setSubmitErr(''); setActiveTab('picks'); }}
+                              style={{
+                                background:'rgba(255,184,0,.12)', border:'1px solid rgba(255,184,0,.3)',
+                                color:'var(--gold)', borderRadius:6, padding:'5px 12px', fontSize:11,
+                                cursor:'pointer', fontWeight:700, letterSpacing:'0.04em', whiteSpace:'nowrap',
+                              }}
+                              onMouseOver={e => { e.currentTarget.style.background='rgba(255,184,0,.22)'; }}
+                              onMouseOut={e => { e.currentTarget.style.background='rgba(255,184,0,.12)'; }}
+                            >MAKE PICKS</button>
+                          ) : !entriesClosed && BUYBACK_DAYS.has(submissionDay) && p.buybacks < 3 && (
                             <button
                               onClick={() => handleBuyback(p.name)}
                               style={{

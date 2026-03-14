@@ -1060,11 +1060,25 @@ function App() {
                             )}
                           </div>
                         </div>
-                        <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                          {Object.entries(p.picks).map(([day, picks]) =>
-                            picks.map(t => (
-                              <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
-                            ))
+                        <div style={{display:'flex', alignItems:'center', gap:8}}>
+                          <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
+                            {Object.entries(p.picks).map(([day, picks]) =>
+                              picks.map(t => (
+                                <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
+                              ))
+                            )}
+                          </div>
+                          {pastFirstDay && !entriesClosed && !p.picks[submissionDay] && (
+                            <button
+                              onClick={() => { setPickerName(p.name); setTeamPicks([]); setSubmitted(false); setSubmitErr(''); setActiveTab('picks'); }}
+                              style={{
+                                background:'rgba(244,99,31,.12)', border:'1px solid rgba(244,99,31,.3)',
+                                color:'var(--accent)', borderRadius:6, padding:'5px 12px', fontSize:11,
+                                cursor:'pointer', fontWeight:700, letterSpacing:'0.04em', whiteSpace:'nowrap',
+                              }}
+                              onMouseOver={e => { e.currentTarget.style.background='rgba(244,99,31,.22)'; }}
+                              onMouseOut={e => { e.currentTarget.style.background='rgba(244,99,31,.12)'; }}
+                            >MAKE PICKS</button>
                           )}
                         </div>
                       </div>

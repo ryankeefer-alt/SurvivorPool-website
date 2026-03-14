@@ -1,0 +1,22 @@
+{
+  "games": {
+    "friday_r1": [
+      { "id": 1, "home": "Duke", "away": "Mount St. Mary's", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 2, "home": "Alabama", "away": "Robert Morris", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 3, "home": "Baylor", "away": "Mississippi State", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 4, "home": "Saint Mary's", "away": "Vanderbilt", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 5, "home": "Arizona", "away": "Akron", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 6, "home": "Oregon", "away": "Liberty", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 7, "home": "Florida", "away": "Norfolk State", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 8, "home": "Maryland", "away": "Grand Canyon", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 9, "home": "UConn", "away": "Oklahoma", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 10, "home": "Colorado State", "away": "Memphis", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 11, "home": "Iowa State", "away": "Lipscomb", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 12, "home": "Ole Miss", "away": "North Carolina", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 13, "home": "New Mexico", "away": "Marquette", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 14, "home": "Kentucky", "away": "Troy", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 15, "home": "Illinois", "away": "Xavier", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 16, "home": "Michigan State", "away": "Bryant", "homeScore": null, "awayScore": null, "winner": null, "final": false }
+    ]
+  }
+}

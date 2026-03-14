@@ -243,9 +243,11 @@ app.post('/api/picks', function(req, res) {
     if (result2 === 'loss') {
       player.status = 'eliminated';
     }
-    // Clear buyback flag after successful submission
+    // Finalize buyback: charge $25 and increment counter on actual pick submission
     if (player.needsBuyback) {
       player.needsBuyback = false;
+      player.buybacks += 1;
+      player.totalSpent += 25;
     }
   }
 
@@ -370,9 +372,7 @@ app.post('/api/buyback', function(req, res) {
   }
 
   player.status = 'alive';
-  player.buybacks += 1;
   player.needsBuyback = true;
-  player.totalSpent += 25;
 
   writeJSON(PLAYERS_PATH, players);
   res.json({ ok: true, buybacks: player.buybacks, totalSpent: player.totalSpent });

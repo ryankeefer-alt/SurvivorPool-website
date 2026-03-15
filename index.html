@@ -1524,6 +1524,7 @@ function App() {
                   <button className="btn btn-primary" style={{width:'100%', justifyContent:'center', marginTop:8, opacity: submitting ? 0.6 : 1}}
                           onClick={handleSubmitPicks} disabled={submitting}>
                     {submitting ? 'Submitting...' : (
+                      teamPicks[0] === 'None' ? 'Lock In None — Automatic Loss' :
                       submissionDay === 'thursday_r1' ? 'Lock In Picks — $25 Entry' :
                       matchedPlayer && matchedPlayer.needsBuyback ? `Lock In ${requiredPicks} Buyback Picks` :
                       'Lock In Picks'

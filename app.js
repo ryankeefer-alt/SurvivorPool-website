@@ -178,12 +178,27 @@ app.post('/api/picks', function(req, res) {
       return res.status(400).json({ error: 'That name has already been submitted.' });
     }
 
+    // Only evaluate picks whose games are actually final
+    var decidedTeamsT = [];
+    for (var dtT = 0; dtT < dayGames.length; dtT++) {
+      if (dayGames[dtT].final && dayGames[dtT].winner) {
+        decidedTeamsT.push(dayGames[dtT].home);
+        decidedTeamsT.push(dayGames[dtT].away);
+      }
+    }
+    var decidedPicksT = picks.filter(function(t) { return decidedTeamsT.indexOf(t) !== -1; });
+    var undecidedPicksT = picks.filter(function(t) { return decidedTeamsT.indexOf(t) === -1; });
+
     var result = 'pending';
     var status = 'alive';
-    if (hasResults) {
-      var allWon = picks.every(function(t) { return dayWinners.indexOf(t) !== -1; });
-      result = allWon ? 'win' : 'loss';
-      status = allWon ? 'alive' : 'eliminated';
+    if (decidedPicksT.length > 0) {
+      var hasPickLossT = decidedPicksT.some(function(t) { return dayWinners.indexOf(t) === -1; });
+      if (hasPickLossT) {
+        result = 'loss';
+        status = 'eliminated';
+      } else if (undecidedPicksT.length === 0) {
+        result = 'win';
+      }
     }
 
     var newPlayer = {
@@ -232,10 +247,26 @@ app.post('/api/picks', function(req, res) {
       return res.status(400).json({ error: 'Cannot reuse teams: ' + reused.join(', ') });
     }
 
+    // Only evaluate picks whose games are actually final
+    var decidedTeamsP = [];
+    for (var dt = 0; dt < dayGames.length; dt++) {
+      if (dayGames[dt].final && dayGames[dt].winner) {
+        decidedTeamsP.push(dayGames[dt].home);
+        decidedTeamsP.push(dayGames[dt].away);
+      }
+    }
+    var decidedPicksP = picks.filter(function(t) { return decidedTeamsP.indexOf(t) !== -1; });
+    var undecidedPicksP = picks.filter(function(t) { return decidedTeamsP.indexOf(t) === -1; });
+
     var result2 = 'pending';
-    if (hasResults) {
-      var allWon2 = picks.every(function(t) { return dayWinners.indexOf(t) !== -1; });
-      result2 = allWon2 ? 'win' : 'loss';
+    if (decidedPicksP.length > 0) {
+      var hasPickLoss = decidedPicksP.some(function(t) { return dayWinners.indexOf(t) === -1; });
+      if (hasPickLoss) {
+        result2 = 'loss';
+      } else if (undecidedPicksP.length === 0) {
+        result2 = 'win';
+      }
+      // else stays 'pending' — some picks won so far, rest undecided
     }
 
     player.picks[day] = picks;

@@ -876,8 +876,9 @@ function App() {
   const handleSubmitPicks = () => {
     setSubmitErr('');
     if (!pickerName.trim()) { setSubmitErr('Please enter your name.'); return; }
-    if (teamPicks.filter(t => t).length < requiredPicks) { setSubmitErr(`Please select ${requiredPicks} team${requiredPicks > 1 ? 's' : ''}.`); return; }
-    if (new Set(teamPicks).size < teamPicks.length) { setSubmitErr('You must pick different teams.'); return; }
+    const isNonePick = teamPicks.length === 1 && teamPicks[0] === 'None';
+    if (!isNonePick && teamPicks.filter(t => t).length < requiredPicks) { setSubmitErr(`Please select ${requiredPicks} team${requiredPicks > 1 ? 's' : ''}.`); return; }
+    if (!isNonePick && new Set(teamPicks).size < teamPicks.length) { setSubmitErr('You must pick different teams.'); return; }
 
     setSubmitting(true);
     fetch('/api/picks', {
@@ -1473,22 +1474,45 @@ function App() {
                     </div>
                   )}
 
-                  {Array.from({length: requiredPicks}, (_, idx) => (
-                    <div key={idx} style={{marginBottom:14}}>
-                      <label className="form-label">Pick {idx + 1}</label>
-                      <select className="form-select" value={teamPicks[idx] || ''}
-                              onChange={e => {
-                                const newPicks = [...teamPicks];
-                                newPicks[idx] = e.target.value;
-                                setTeamPicks(newPicks);
-                              }}>
-                        <option value="">Select team...</option>
-                        {availableTeams.filter(t => !teamPicks.includes(t) || teamPicks[idx] === t).map(t =>
-                          <option key={t} value={t}>{t}</option>
-                        )}
-                      </select>
+                  {availableTeams.length === 0 && pickerName.trim() && submissionDay !== 'thursday_r1' ? (
+                    <div style={{marginBottom:14}}>
+                      <div style={{
+                        background:'rgba(248,113,113,.08)', border:'1px solid rgba(248,113,113,.2)',
+                        borderRadius:8, padding:'14px 16px', marginBottom:16, fontSize:13, color:'var(--danger)', lineHeight:1.6,
+                      }}>
+                        You have no available teams left to pick. You can submit <strong>None</strong> to stay in the pool for this round, but it will count as an automatic loss once results are finalized.
+                      </div>
+                      <button
+                        className={`btn ${teamPicks[0] === 'None' ? 'btn-primary' : ''}`}
+                        style={{
+                          width:'100%', justifyContent:'center',
+                          background: teamPicks[0] === 'None' ? undefined : 'rgba(248,113,113,.12)',
+                          border: teamPicks[0] === 'None' ? undefined : '1px solid rgba(248,113,113,.3)',
+                          color: teamPicks[0] === 'None' ? undefined : 'var(--danger)',
+                        }}
+                        onClick={() => setTeamPicks(['None'])}
+                      >
+                        {teamPicks[0] === 'None' ? '✓ None Selected' : 'Select None — Automatic Loss'}
+                      </button>
                     </div>
-                  ))}
+                  ) : (
+                    Array.from({length: requiredPicks}, (_, idx) => (
+                      <div key={idx} style={{marginBottom:14}}>
+                        <label className="form-label">Pick {idx + 1}</label>
+                        <select className="form-select" value={teamPicks[idx] || ''}
+                                onChange={e => {
+                                  const newPicks = [...teamPicks];
+                                  newPicks[idx] = e.target.value;
+                                  setTeamPicks(newPicks);
+                                }}>
+                          <option value="">Select team...</option>
+                          {availableTeams.filter(t => !teamPicks.includes(t) || teamPicks[idx] === t).map(t =>
+                            <option key={t} value={t}>{t}</option>
+                          )}
+                        </select>
+                      </div>
+                    ))
+                  )}
 
                   {submitErr && (
                     <div style={{color:'var(--danger)', fontSize:13, marginBottom:12, padding:'10px 14px',

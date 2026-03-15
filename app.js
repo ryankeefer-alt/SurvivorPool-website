@@ -127,25 +127,34 @@ app.get('/api/state', function(req, res) {
     }
 
     var sdPicks = sp.picks[latestDay];
-    var sdDecidedPicks = sdPicks.filter(function(t) { return sdDecided.indexOf(t) !== -1; });
-    var sdUndecidedPicks = sdPicks.filter(function(t) { return sdDecided.indexOf(t) === -1; });
 
+    // Handle "None" picks — automatic loss once all games are final
+    var sdIsNone = sdPicks.length === 1 && sdPicks[0] === 'None';
     var correctStatus, correctResult;
-    if (sdDecidedPicks.length === 0) {
-      // No games final for this player's picks — pending, alive
-      correctResult = 'pending';
-      correctStatus = 'alive';
+    if (sdIsNone) {
+      var sdAllFinal = sdGames.length > 0 && sdGames.every(function(g) { return g.final; });
+      correctResult = sdAllFinal ? 'loss' : 'pending';
+      correctStatus = sdAllFinal ? 'eliminated' : 'alive';
     } else {
-      var sdHasLoss = sdDecidedPicks.some(function(t) { return sdWinners.indexOf(t) === -1; });
-      if (sdHasLoss) {
-        correctResult = 'loss';
-        correctStatus = 'eliminated';
-      } else if (sdUndecidedPicks.length === 0) {
-        correctResult = 'win';
-        correctStatus = 'alive';
-      } else {
+      var sdDecidedPicks = sdPicks.filter(function(t) { return sdDecided.indexOf(t) !== -1; });
+      var sdUndecidedPicks = sdPicks.filter(function(t) { return sdDecided.indexOf(t) === -1; });
+
+      if (sdDecidedPicks.length === 0) {
+        // No games final for this player's picks — pending, alive
         correctResult = 'pending';
         correctStatus = 'alive';
+      } else {
+        var sdHasLoss = sdDecidedPicks.some(function(t) { return sdWinners.indexOf(t) === -1; });
+        if (sdHasLoss) {
+          correctResult = 'loss';
+          correctStatus = 'eliminated';
+        } else if (sdUndecidedPicks.length === 0) {
+          correctResult = 'win';
+          correctStatus = 'alive';
+        } else {
+          correctResult = 'pending';
+          correctStatus = 'alive';
+        }
       }
     }
 
@@ -290,38 +299,57 @@ app.post('/api/picks', function(req, res) {
       return res.status(400).json({ error: 'You already submitted picks for this day.' });
     }
 
-    // Determine required picks (buyback players need more)
-    var requiredPicks2 = (player.needsBuyback && BUYBACK_PICKS[day])
-      ? BUYBACK_PICKS[day]
-      : (PICKS_PER_DAY[day] || 1);
-    if (picks.length !== requiredPicks2) {
-      return res.status(400).json({ error: 'Exactly ' + requiredPicks2 + ' pick(s) required.' });
-    }
+    // Handle "None" pick — player has no available teams, automatic loss when finalized
+    var isNonePick = picks.length === 1 && picks[0] === 'None';
 
-    // Check for team reuse across all previous days
-    var allUsedTeams = [];
-    Object.values(player.picks).forEach(function(dayPicks) {
-      dayPicks.forEach(function(t) {
-        if (allUsedTeams.indexOf(t) === -1) allUsedTeams.push(t);
+    if (!isNonePick) {
+      // Determine required picks (buyback players need more)
+      var requiredPicks2 = (player.needsBuyback && BUYBACK_PICKS[day])
+        ? BUYBACK_PICKS[day]
+        : (PICKS_PER_DAY[day] || 1);
+      if (picks.length !== requiredPicks2) {
+        return res.status(400).json({ error: 'Exactly ' + requiredPicks2 + ' pick(s) required.' });
+      }
+
+      // Check for team reuse across all previous days
+      var allUsedTeams = [];
+      Object.values(player.picks).forEach(function(dayPicks) {
+        dayPicks.forEach(function(t) {
+          if (allUsedTeams.indexOf(t) === -1) allUsedTeams.push(t);
+        });
       });
-    });
-    var reused = picks.filter(function(t) { return allUsedTeams.indexOf(t) !== -1; });
-    if (reused.length > 0) {
-      return res.status(400).json({ error: 'Cannot reuse teams: ' + reused.join(', ') });
+      var reused = picks.filter(function(t) { return allUsedTeams.indexOf(t) !== -1; });
+      if (reused.length > 0) {
+        return res.status(400).json({ error: 'Cannot reuse teams: ' + reused.join(', ') });
+      }
     }
 
     // Only evaluate picks whose games are actually final
-    var decidedTeamsP = [];
-    for (var dt = 0; dt < dayGames.length; dt++) {
-      if (dayGames[dt].final && dayGames[dt].winner) {
-        decidedTeamsP.push(dayGames[dt].home);
-        decidedTeamsP.push(dayGames[dt].away);
+    var result2 = 'pending';
+    if (isNonePick) {
+      // "None" stays pending until all games are final, then becomes a loss
+      var allFinal = dayGames.length > 0 && dayGames.every(function(g) { return g.final; });
+      result2 = allFinal ? 'loss' : 'pending';
+    } else {
+      var decidedTeamsP = [];
+      for (var dt = 0; dt < dayGames.length; dt++) {
+        if (dayGames[dt].final && dayGames[dt].winner) {
+          decidedTeamsP.push(dayGames[dt].home);
+          decidedTeamsP.push(dayGames[dt].away);
+        }
+      }
+      var decidedPicksP = picks.filter(function(t) { return decidedTeamsP.indexOf(t) !== -1; });
+      var undecidedPicksP = picks.filter(function(t) { return decidedTeamsP.indexOf(t) === -1; });
+
+      if (decidedPicksP.length > 0) {
+        var hasPickLoss = decidedPicksP.some(function(t) { return dayWinners.indexOf(t) === -1; });
+        if (hasPickLoss) {
+          result2 = 'loss';
+        } else if (undecidedPicksP.length === 0) {
+          result2 = 'win';
+        }
       }
     }
-    var decidedPicksP = picks.filter(function(t) { return decidedTeamsP.indexOf(t) !== -1; });
-    var undecidedPicksP = picks.filter(function(t) { return decidedTeamsP.indexOf(t) === -1; });
-
-    var result2 = 'pending';
     if (decidedPicksP.length > 0) {
       var hasPickLoss = decidedPicksP.some(function(t) { return dayWinners.indexOf(t) === -1; });
       if (hasPickLoss) {
@@ -435,6 +463,17 @@ app.post('/api/admin/games', function(req, res) {
   for (var j = 0; j < players.length; j++) {
     var p = players[j];
     if (!p.picks[day]) continue;
+
+    // Handle "None" picks — automatic loss once all games are final
+    var isNone = p.picks[day].length === 1 && p.picks[day][0] === 'None';
+    if (isNone) {
+      var allFinal = games.length > 0 && games.every(function(g) { return g.final; });
+      var noneResult = allFinal ? 'loss' : 'pending';
+      var noneStatus = allFinal ? 'eliminated' : 'alive';
+      if (p.results[day] !== noneResult) { p.results[day] = noneResult; changed = true; }
+      if (p.status !== noneStatus) { p.status = noneStatus; changed = true; }
+      continue;
+    }
 
     // Only evaluate picks whose games are final
     var decidedPicks = p.picks[day].filter(function(t) { return decidedTeams.indexOf(t) !== -1; });

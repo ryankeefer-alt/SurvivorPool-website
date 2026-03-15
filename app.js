@@ -373,6 +373,23 @@ app.post('/api/buyback', function(req, res) {
     return res.status(400).json({ error: 'Entries are closed. Cannot buy back right now.' });
   }
 
+  // Only allow buyback on the day immediately after elimination
+  var currentIdx = DAY_ORDER.indexOf(config.currentDay);
+  var eliminatedDay = null;
+  for (var d = DAY_ORDER.length - 1; d >= 0; d--) {
+    if (player.results[DAY_ORDER[d]] === 'loss') {
+      eliminatedDay = DAY_ORDER[d];
+      break;
+    }
+  }
+  if (!eliminatedDay) {
+    return res.status(400).json({ error: 'Cannot determine elimination day.' });
+  }
+  var elimIdx = DAY_ORDER.indexOf(eliminatedDay);
+  if (currentIdx !== elimIdx + 1) {
+    return res.status(400).json({ error: 'Buyback window has passed. You can only buy back the round after you were eliminated.' });
+  }
+
   // Don't change status yet — player stays eliminated until they submit picks
   player.needsBuyback = true;
 

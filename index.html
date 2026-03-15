@@ -757,6 +757,21 @@ function App() {
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
+  // Check if an eliminated player can buy back (only the round immediately after their loss)
+  const canBuyback = useCallback((player) => {
+    if (player.status !== 'eliminated' || player.needsBuyback) return false;
+    if (!BUYBACK_DAYS.has(submissionDay)) return false;
+    if (player.buybacks >= 3) return false;
+    const currentIdx = DAY_ORDER.indexOf(submissionDay);
+    // Find the day they were last eliminated
+    for (let d = DAY_ORDER.length - 1; d >= 0; d--) {
+      if (player.results[DAY_ORDER[d]] === 'loss') {
+        return currentIdx === d + 1; // only buyback the day right after the loss
+      }
+    }
+    return false;
+  }, [submissionDay]);
+
   // ── Pick distribution for bar chart (only computed when entries are closed) ──
   const pickDistribution = useMemo(() => {
     if (!entriesClosed || players.length === 0) return [];
@@ -1153,7 +1168,7 @@ function App() {
                               onMouseOver={e => { e.currentTarget.style.background='rgba(255,184,0,.22)'; }}
                               onMouseOut={e => { e.currentTarget.style.background='rgba(255,184,0,.12)'; }}
                             >MAKE PICKS</button>
-                          ) : !entriesClosed && BUYBACK_DAYS.has(submissionDay) && p.buybacks < 3 && (
+                          ) : !entriesClosed && canBuyback(p) && (
                             <button
                               onClick={() => handleBuyback(p.name)}
                               style={{

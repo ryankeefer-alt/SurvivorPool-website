@@ -1324,7 +1324,7 @@ function App() {
                 </div>
               </div>
             ) : (
-              Object.entries(gamesData).map(([day, games]) => (
+              Object.entries(gamesData).sort((a, b) => DAY_ORDER.indexOf(b[0]) - DAY_ORDER.indexOf(a[0])).map(([day, games]) => (
                 <div key={day} style={{marginBottom:24}}>
                   <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
                     <div className="anton" style={{fontSize:16, color:'var(--cream)', letterSpacing:'0.05em'}}>{DAY_FULL[day]}</div>

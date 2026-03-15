@@ -682,6 +682,62 @@ app.post('/api/admin/import', function(req, res) {
   res.json({ ok: true, imported: imported });
 });
 
+/* ── POST /api/admin/reset ── reset all data for a fresh pool */
+app.post('/api/admin/reset', function(req, res) {
+  var config = readJSON(CONFIG_PATH);
+  var pin = req.body.pin;
+
+  if (pin !== config.adminPin && pin !== '___admin___') {
+    return res.status(401).json({ error: 'Incorrect PIN.' });
+  }
+
+  // Reset config: back to thursday_r1, clear closed days, preserve PIN
+  var freshConfig = {
+    currentDay: 'thursday_r1',
+    closedDays: [],
+    adminPin: config.adminPin,
+    buybackDays: ['friday_r1', 'saturday_r2', 'sunday_r2']
+  };
+  writeJSON(CONFIG_PATH, freshConfig);
+
+  // Reset players: empty list
+  writeJSON(PLAYERS_PATH, []);
+
+  // Reset games: thursday_r1 with default games, all other rounds empty
+  var freshGames = {
+    thursday_r1: [
+      { id:1, home:'Houston', away:'SIU Edwardsville', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:2, home:'Auburn', away:'Alabama State', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:3, home:"St. John's", away:'Omaha', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:4, home:'Tennessee', away:'Wofford', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:5, home:'Wisconsin', away:'Montana', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:6, home:'Texas Tech', away:'UNC Wilmington', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:7, home:'Purdue', away:'High Point', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:8, home:'Texas A&M', away:'Yale', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:9, home:'Michigan', away:'UC San Diego', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:10, home:'Clemson', away:'McNeese State', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:11, home:'BYU', away:'VCU', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:12, home:'Missouri', away:'Drake', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:13, home:'UCLA', away:'Utah State', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:14, home:'Kansas', away:'Arkansas', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:15, home:'Gonzaga', away:'Georgia', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:16, home:'Louisville', away:'Creighton', homeScore:null, awayScore:null, winner:null, final:false }
+    ],
+    friday_r1: [],
+    saturday_r2: [],
+    sunday_r2: [],
+    thursday_s16: [],
+    friday_s16: [],
+    saturday_e8: [],
+    sunday_e8: [],
+    saturday_ff: [],
+    monday_champ: []
+  };
+  writeJSON(GAMES_PATH, freshGames);
+
+  res.json({ ok: true, message: 'Pool has been reset to Thursday Round 1.' });
+});
+
 /* ── POST /api/admin/export ── export all data for backup */
 app.post('/api/admin/export', function(req, res) {
   var config = readJSON(CONFIG_PATH);

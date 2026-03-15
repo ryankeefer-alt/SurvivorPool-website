@@ -633,17 +633,51 @@ function App() {
   };
 
   const handleMarkFinal = (gameId) => {
-    setEditingGames(prev => prev.map(g => {
-      if (g.id !== gameId) return g;
-      const hs = parseInt(g.homeScore) || 0;
-      const as = parseInt(g.awayScore) || 0;
-      const winner = hs > as ? g.home : hs < as ? g.away : null;
-      return {...g, homeScore: hs, awayScore: as, winner, final: true};
-    }));
+    setEditingGames(prev => {
+      const updated = prev.map(g => {
+        if (g.id !== gameId) return g;
+        const hs = parseInt(g.homeScore) || 0;
+        const as = parseInt(g.awayScore) || 0;
+        const winner = hs > as ? g.home : hs < as ? g.away : null;
+        return {...g, homeScore: hs, awayScore: as, winner, final: true};
+      });
+      // Auto-save to server when a game is marked final
+      fetch('/api/admin/games', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ day: submissionDay, games: updated, pin: '___admin___' })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          setSaveNotification('Saved!');
+          setTimeout(() => setSaveNotification(''), 3000);
+          fetchState();
+        }
+      });
+      return updated;
+    });
   };
 
   const handleUnmarkFinal = (gameId) => {
-    setEditingGames(prev => prev.map(g => g.id === gameId ? {...g, final: false, winner: null} : g));
+    setEditingGames(prev => {
+      const updated = prev.map(g => g.id === gameId ? {...g, final: false, winner: null} : g);
+      // Auto-save to server when a game is unmarked
+      fetch('/api/admin/games', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ day: submissionDay, games: updated, pin: '___admin___' })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          setSaveNotification('Saved!');
+          setTimeout(() => setSaveNotification(''), 3000);
+          fetchState();
+        }
+      });
+      return updated;
+    });
   };
 
   const handleSaveGames = () => {

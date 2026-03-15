@@ -791,6 +791,50 @@ function App() {
   const alivePlayers = useMemo(() => players.filter(p => p.status === 'alive'), [players]);
   const eliminatedPlayers = useMemo(() => players.filter(p => p.status === 'eliminated'), [players]);
 
+  // ── Pool-over detection ──
+  // If all alive players have no available teams or are all forced into the same pick(s), pool is over
+  const poolResult = useMemo(() => {
+    if (alivePlayers.length === 0) return null;
+    // Single player left — they win
+    if (alivePlayers.length === 1) {
+      return { finished: true, winners: [alivePlayers[0].name], reason: 'Last player standing!' };
+    }
+    // Only check if current day has teams (games imported)
+    const nextTeams = teamsData[submissionDay] || [];
+    if (nextTeams.length === 0) return null;
+    // Only check players who haven't submitted picks for the current day yet
+    const needPicks = alivePlayers.filter(p => !p.picks[submissionDay]);
+    // If everyone already submitted picks, no check needed yet
+    if (needPicks.length === 0) return null;
+
+    const picksPerDay = PICKS_PER_DAY[submissionDay] || 1;
+    const playerAvailable = needPicks.map(p => {
+      const used = [];
+      Object.values(p.picks || {}).forEach(dayPicks => {
+        dayPicks.forEach(t => { if (t !== 'None' && used.indexOf(t) === -1) used.push(t); });
+      });
+      return nextTeams.filter(t => used.indexOf(t) === -1).sort();
+    });
+
+    const allEmpty = playerAvailable.every(teams => teams.length === 0);
+    if (allEmpty) {
+      return { finished: true, winners: needPicks.map(p => p.name), reason: 'No teams left for any remaining player.' };
+    }
+
+    // Check if all players are forced into the exact same pick(s)
+    // Only applies when each player has exactly the required number of teams left
+    const allForced = playerAvailable.every(teams => teams.length === picksPerDay);
+    if (allForced) {
+      const firstPicks = playerAvailable[0].join(',');
+      const allSame = playerAvailable.every(teams => teams.join(',') === firstPicks);
+      if (allSame) {
+        return { finished: true, winners: needPicks.map(p => p.name), reason: `All remaining players must pick ${playerAvailable[0].join(' & ')}. Same outcome for everyone.` };
+      }
+    }
+
+    return null;
+  }, [alivePlayers, teamsData, submissionDay]);
+
   // Check if an eliminated player can buy back (only the round immediately after their loss)
   const canBuyback = useCallback((player) => {
     if (player.status !== 'eliminated' || player.needsBuyback) return false;
@@ -1058,6 +1102,25 @@ function App() {
                 <div style={{fontSize:11, color:'var(--muted)', marginTop:6, letterSpacing:'0.08em', textTransform:'uppercase'}}>Current Round</div>
               </div>
             </div>
+
+            {/* Pool Over Banner */}
+            {poolResult && poolResult.finished && (
+              <div className="card anim-up" style={{
+                marginBottom:20, background:'linear-gradient(135deg, rgba(255,184,0,.15), rgba(244,99,31,.15))',
+                border:'2px solid var(--gold)', textAlign:'center', padding:'32px 22px',
+              }}>
+                <div style={{fontSize:48, marginBottom:12}}>🏆</div>
+                <div className="anton" style={{fontSize:28, color:'var(--gold)', letterSpacing:'0.04em', lineHeight:1.2}}>
+                  POOL OVER — {poolResult.winners.length > 1 ? 'TIE' : 'WINNER'}!
+                </div>
+                <div style={{color:'var(--cream)', marginTop:12, fontSize:16, fontWeight:700}}>
+                  {poolResult.winners.join(', ')}
+                </div>
+                <div style={{color:'var(--muted)', marginTop:8, fontSize:13}}>
+                  {poolResult.reason}
+                </div>
+              </div>
+            )}
 
             {/* Entries */}
             {players.length === 0 ? (

@@ -601,6 +601,22 @@ function App() {
     .catch(() => alert('Network error'));
   };
 
+  const handleResetPool = () => {
+    if (!window.confirm('Are you sure you want to reset the entire pool? This will delete ALL players, picks, and game results. This cannot be undone.')) return;
+    if (!window.confirm('FINAL WARNING: This will permanently erase all data and reset to Thursday Round 1. Continue?')) return;
+    fetch('/api/admin/reset', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ pin: '___admin___' })
+    }).then(r => r.json()).then(d => {
+      if (d.ok) {
+        window.location.reload();
+      } else {
+        alert(d.error || 'Reset failed');
+      }
+    });
+  };
+
   const handleAdvanceDay = () => {
     fetch('/api/admin/advance-day', {
       method: 'POST',
@@ -1702,6 +1718,10 @@ function App() {
                       ▶ Advance to {DAY_LABELS[DAY_ORDER[DAY_ORDER.indexOf(submissionDay) + 1]]}
                     </button>
                   )}
+
+                  <button className="btn btn-ghost" onClick={handleResetPool} style={{color:'#ef4444', borderColor:'#ef4444'}}>
+                    Reset Pool
+                  </button>
                 </div>
               </div>
             </div>

@@ -350,15 +350,6 @@ app.post('/api/picks', function(req, res) {
         }
       }
     }
-    if (decidedPicksP.length > 0) {
-      var hasPickLoss = decidedPicksP.some(function(t) { return dayWinners.indexOf(t) === -1; });
-      if (hasPickLoss) {
-        result2 = 'loss';
-      } else if (undecidedPicksP.length === 0) {
-        result2 = 'win';
-      }
-      // else stays 'pending' — some picks won so far, rest undecided
-    }
 
     player.picks[day] = picks;
     player.results[day] = result2;

@@ -383,10 +383,10 @@ app.post('/api/admin/games', function(req, res) {
         p.results[day] = 'pending';
         changed = true;
       }
-      // Recalculate status — if no losses on any day, should be alive
-      var hasAnyLoss3 = false;
-      for (var dk3 in p.results) { if (p.results[dk3] === 'loss') { hasAnyLoss3 = true; break; } }
-      if (!hasAnyLoss3 && p.status === 'eliminated') { p.status = 'alive'; changed = true; }
+      // Player has picks for today so they're active — check if they should be alive
+      // A player with today's picks is alive unless they have a loss on TODAY
+      // (previous-day losses are covered by buyback — they bought back to play today)
+      if (p.status === 'eliminated') { p.status = 'alive'; changed = true; }
       continue;
     }
 
@@ -399,17 +399,13 @@ app.post('/api/admin/games', function(req, res) {
     } else if (undecidedPicks.length === 0) {
       // All picks decided and all won
       if (p.results[day] !== 'win') { p.results[day] = 'win'; changed = true; }
-      // Recalculate status — alive if no losses on any day
-      var hasAnyLoss = false;
-      for (var dk in p.results) { if (p.results[dk] === 'loss') { hasAnyLoss = true; break; } }
-      if (!hasAnyLoss && p.status === 'eliminated') { p.status = 'alive'; changed = true; }
+      // Player won all picks today — they're alive
+      if (p.status === 'eliminated') { p.status = 'alive'; changed = true; }
     } else {
       // All decided picks won but some games still pending — keep as pending
       if (p.results[day] !== 'pending') { p.results[day] = 'pending'; changed = true; }
-      // Recalculate status — if no losses anywhere, should be alive
-      var hasAnyLoss2 = false;
-      for (var dk2 in p.results) { if (p.results[dk2] === 'loss') { hasAnyLoss2 = true; break; } }
-      if (!hasAnyLoss2 && p.status === 'eliminated') { p.status = 'alive'; changed = true; }
+      // Player is still in it — no losses today
+      if (p.status === 'eliminated') { p.status = 'alive'; changed = true; }
     }
   }
   if (changed) {

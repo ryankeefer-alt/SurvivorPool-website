@@ -96,6 +96,69 @@ app.get('/api/state', function(req, res) {
   var players = readJSON(PLAYERS_PATH);
   var games = readJSON(GAMES_PATH);
 
+  // Recalculate player statuses based on current game data
+  // This ensures statuses are always correct regardless of stale data
+  var statusChanged = false;
+  for (var si = 0; si < players.length; si++) {
+    var sp = players[si];
+    // Find the latest day this player has picks for
+    var latestDay = null;
+    var latestIdx = -1;
+    for (var sd = 0; sd < DAY_ORDER.length; sd++) {
+      if (sp.picks[DAY_ORDER[sd]]) {
+        if (sd > latestIdx) {
+          latestIdx = sd;
+          latestDay = DAY_ORDER[sd];
+        }
+      }
+    }
+    if (!latestDay) continue;
+
+    // Get winners and decided teams for the latest day
+    var sdGames = games[latestDay] || [];
+    var sdWinners = [];
+    var sdDecided = [];
+    for (var sg = 0; sg < sdGames.length; sg++) {
+      if (sdGames[sg].final && sdGames[sg].winner) {
+        sdWinners.push(sdGames[sg].winner);
+        sdDecided.push(sdGames[sg].home);
+        sdDecided.push(sdGames[sg].away);
+      }
+    }
+
+    var sdPicks = sp.picks[latestDay];
+    var sdDecidedPicks = sdPicks.filter(function(t) { return sdDecided.indexOf(t) !== -1; });
+    var sdUndecidedPicks = sdPicks.filter(function(t) { return sdDecided.indexOf(t) === -1; });
+
+    var correctStatus, correctResult;
+    if (sdDecidedPicks.length === 0) {
+      // No games final for this player's picks — pending, alive
+      correctResult = 'pending';
+      correctStatus = 'alive';
+    } else {
+      var sdHasLoss = sdDecidedPicks.some(function(t) { return sdWinners.indexOf(t) === -1; });
+      if (sdHasLoss) {
+        correctResult = 'loss';
+        correctStatus = 'eliminated';
+      } else if (sdUndecidedPicks.length === 0) {
+        correctResult = 'win';
+        correctStatus = 'alive';
+      } else {
+        correctResult = 'pending';
+        correctStatus = 'alive';
+      }
+    }
+
+    if (sp.results[latestDay] !== correctResult || sp.status !== correctStatus) {
+      sp.results[latestDay] = correctResult;
+      sp.status = correctStatus;
+      statusChanged = true;
+    }
+  }
+  if (statusChanged) {
+    writeJSON(PLAYERS_PATH, players);
+  }
+
   // Don't send the admin PIN to the client
   var safeConfig = Object.assign({}, config);
   delete safeConfig.adminPin;

@@ -325,24 +325,63 @@ app.post('/api/admin/games', function(req, res) {
   writeJSON(GAMES_PATH, allGames);
 
   // Process player results based on new game outcomes
+  // Collect winners AND all teams from final games (so we know which picks are decided)
   var dayWinners = [];
+  var decidedTeams = [];
   for (var i = 0; i < games.length; i++) {
     if (games[i].final && games[i].winner) {
       dayWinners.push(games[i].winner);
+      decidedTeams.push(games[i].home);
+      decidedTeams.push(games[i].away);
     }
   }
 
-  if (dayWinners.length > 0) {
-    var players = readJSON(PLAYERS_PATH);
-    for (var j = 0; j < players.length; j++) {
-      var p = players[j];
-      if (!p.picks[day]) continue;
-      var allWon = p.picks[day].every(function(t) { return dayWinners.indexOf(t) !== -1; });
-      p.results[day] = allWon ? 'win' : 'loss';
-      if (!allWon && p.status === 'alive') {
-        p.status = 'eliminated';
+  var players = readJSON(PLAYERS_PATH);
+  var changed = false;
+  for (var j = 0; j < players.length; j++) {
+    var p = players[j];
+    if (!p.picks[day]) continue;
+
+    // Only evaluate picks whose games are final
+    var decidedPicks = p.picks[day].filter(function(t) { return decidedTeams.indexOf(t) !== -1; });
+    var undecidedPicks = p.picks[day].filter(function(t) { return decidedTeams.indexOf(t) === -1; });
+
+    if (decidedPicks.length === 0) {
+      // No games final yet for this player's picks — keep result as pending
+      if (p.results[day] !== 'pending') {
+        p.results[day] = 'pending';
+        changed = true;
       }
+      // Recalculate status — if no losses on any day, should be alive
+      var hasAnyLoss3 = false;
+      for (var dk3 in p.results) { if (p.results[dk3] === 'loss') { hasAnyLoss3 = true; break; } }
+      if (!hasAnyLoss3 && p.status === 'eliminated') { p.status = 'alive'; changed = true; }
+      continue;
     }
+
+    var hasLoss = decidedPicks.some(function(t) { return dayWinners.indexOf(t) === -1; });
+
+    if (hasLoss) {
+      // At least one decided pick lost — eliminated
+      if (p.results[day] !== 'loss') { p.results[day] = 'loss'; changed = true; }
+      if (p.status === 'alive') { p.status = 'eliminated'; changed = true; }
+    } else if (undecidedPicks.length === 0) {
+      // All picks decided and all won
+      if (p.results[day] !== 'win') { p.results[day] = 'win'; changed = true; }
+      // Recalculate status — alive if no losses on any day
+      var hasAnyLoss = false;
+      for (var dk in p.results) { if (p.results[dk] === 'loss') { hasAnyLoss = true; break; } }
+      if (!hasAnyLoss && p.status === 'eliminated') { p.status = 'alive'; changed = true; }
+    } else {
+      // All decided picks won but some games still pending — keep as pending
+      if (p.results[day] !== 'pending') { p.results[day] = 'pending'; changed = true; }
+      // Recalculate status — if no losses anywhere, should be alive
+      var hasAnyLoss2 = false;
+      for (var dk2 in p.results) { if (p.results[dk2] === 'loss') { hasAnyLoss2 = true; break; } }
+      if (!hasAnyLoss2 && p.status === 'eliminated') { p.status = 'alive'; changed = true; }
+    }
+  }
+  if (changed) {
     writeJSON(PLAYERS_PATH, players);
   }
 

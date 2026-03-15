@@ -380,6 +380,68 @@ app.post('/api/buyback', function(req, res) {
   res.json({ ok: true, buybacks: player.buybacks, totalSpent: player.totalSpent });
 });
 
+/* ── POST /api/admin/edit-picks ── admin edits a player's picks for a specific day */
+app.post('/api/admin/edit-picks', function(req, res) {
+  var config = readJSON(CONFIG_PATH);
+  var pin = req.body.pin;
+
+  if (pin !== config.adminPin && pin !== '___admin___') {
+    return res.status(401).json({ error: 'Incorrect PIN.' });
+  }
+
+  var playerId = req.body.playerId;
+  var day = req.body.day;
+  var picks = req.body.picks;
+
+  if (!playerId || !day || !Array.isArray(picks) || picks.length === 0) {
+    return res.status(400).json({ error: 'Missing playerId, day, or picks.' });
+  }
+
+  var players = readJSON(PLAYERS_PATH);
+  var player = players.find(function(p) { return p.id === playerId; });
+  if (!player) {
+    return res.status(404).json({ error: 'Player not found.' });
+  }
+
+  // Check for duplicate teams in submission
+  var uniquePicks = [];
+  for (var i = 0; i < picks.length; i++) {
+    if (uniquePicks.indexOf(picks[i]) === -1) uniquePicks.push(picks[i]);
+  }
+  if (uniquePicks.length !== picks.length) {
+    return res.status(400).json({ error: 'Duplicate teams in picks.' });
+  }
+
+  // Update picks for that day
+  player.picks[day] = picks;
+
+  // Re-evaluate result for that day based on current game data
+  var games = readJSON(GAMES_PATH);
+  var dayGames = games[day] || [];
+  var dayWinners = [];
+  for (var g = 0; g < dayGames.length; g++) {
+    if (dayGames[g].final && dayGames[g].winner) {
+      dayWinners.push(dayGames[g].winner);
+    }
+  }
+
+  if (dayWinners.length > 0) {
+    var allWon = picks.every(function(t) { return dayWinners.indexOf(t) !== -1; });
+    player.results[day] = allWon ? 'win' : 'loss';
+    // Update status based on results across all days
+    var hasLoss = false;
+    Object.values(player.results).forEach(function(r) {
+      if (r === 'loss') hasLoss = true;
+    });
+    player.status = hasLoss ? 'eliminated' : 'alive';
+  } else {
+    player.results[day] = 'pending';
+  }
+
+  writeJSON(PLAYERS_PATH, players);
+  res.json({ ok: true, player: player });
+});
+
 /* ── POST /api/admin/delete-player ── remove a player entry */
 app.post('/api/admin/delete-player', function(req, res) {
   var config = readJSON(CONFIG_PATH);

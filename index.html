@@ -668,12 +668,21 @@ function App() {
 
   // ── Admin game editing state ──
   const [editingGames, setEditingGames] = useState(null); // local copy of games for editing
+  const [editingPickDayGames, setEditingPickDayGames] = useState(null); // games for pickDay when different
 
   useEffect(() => {
     if (isAdmin && gamesData[submissionDay]) {
       setEditingGames(JSON.parse(JSON.stringify(gamesData[submissionDay])));
     }
   }, [isAdmin, submissionDay, gamesData]);
+
+  useEffect(() => {
+    if (isAdmin && pickDay !== submissionDay && gamesData[pickDay]) {
+      setEditingPickDayGames(JSON.parse(JSON.stringify(gamesData[pickDay])));
+    } else {
+      setEditingPickDayGames(null);
+    }
+  }, [isAdmin, pickDay, submissionDay, gamesData]);
 
   const handleGameScoreChange = (gameId, field, value) => {
     setEditingGames(prev => prev.map(g => g.id === gameId ? {...g, [field]: value} : g));
@@ -732,6 +741,61 @@ function App() {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ day: submissionDay, games: editingGames, pin: '___admin___' })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        setSaveNotification('Saved!');
+        setTimeout(() => setSaveNotification(''), 3000);
+        fetchState();
+      }
+    });
+  };
+
+  // ── Pick Day game editing handlers ──
+  const handlePickDayScoreChange = (gameId, field, value) => {
+    setEditingPickDayGames(prev => prev.map(g => g.id === gameId ? {...g, [field]: value} : g));
+  };
+
+  const handlePickDayMarkFinal = (gameId) => {
+    setEditingPickDayGames(prev => {
+      const updated = prev.map(g => {
+        if (g.id !== gameId) return g;
+        const hs = parseInt(g.homeScore) || 0;
+        const as = parseInt(g.awayScore) || 0;
+        const winner = hs > as ? g.home : hs < as ? g.away : null;
+        return {...g, homeScore: hs, awayScore: as, winner, final: true};
+      });
+      fetch('/api/admin/games', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ day: pickDay, games: updated, pin: '___admin___' })
+      })
+      .then(r => r.json())
+      .then(data => { if (data.ok) fetchState(); });
+      return updated;
+    });
+  };
+
+  const handlePickDayUnmarkFinal = (gameId) => {
+    setEditingPickDayGames(prev => {
+      const updated = prev.map(g => g.id === gameId ? {...g, final: false, winner: null} : g);
+      fetch('/api/admin/games', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ day: pickDay, games: updated, pin: '___admin___' })
+      })
+      .then(r => r.json())
+      .then(data => { if (data.ok) fetchState(); });
+      return updated;
+    });
+  };
+
+  const handleSavePickDayGames = () => {
+    fetch('/api/admin/games', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ day: pickDay, games: editingPickDayGames, pin: '___admin___' })
     })
     .then(r => r.json())
     .then(data => {
@@ -1862,6 +1926,82 @@ function App() {
                     }}>✓ {saveNotification}</span>
                   )}
                   <button className="btn btn-primary" onClick={handleSaveGames}>
+                    Save &amp; Process Results
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Pick Day Game Results Editor (shown when pickDay differs from submissionDay) */}
+            {editingPickDayGames && editingPickDayGames.length > 0 && pickDay !== submissionDay && (
+              <div className="card anim-up anim-up-2" style={{marginBottom:20, border:'1px solid rgba(74,222,128,.2)'}}>
+                <div className="card-header" style={{background:'rgba(74,222,128,.06)'}}>
+                  <div className="card-title" style={{color:'var(--success)'}}>GAME RESULTS — {DAY_LABELS[pickDay]}</div>
+                  <button className="btn btn-primary" style={{padding:'6px 16px', fontSize:12}} onClick={handleSavePickDayGames}>
+                    Save &amp; Process Results
+                  </button>
+                </div>
+                <div style={{padding:0}}>
+                  {editingPickDayGames.map((game, i) => (
+                    <div key={game.id} style={{
+                      padding:'12px 22px',
+                      borderBottom: i < editingPickDayGames.length - 1 ? '1px solid var(--border)' : 'none',
+                      background: game.final ? 'rgba(74,222,128,.04)' : 'transparent',
+                    }}>
+                      <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
+                        <div style={{flex:'1 1 120px', minWidth:100}}>
+                          <div style={{fontSize:13, fontWeight:game.final && game.winner === game.home ? 700 : 400, color: game.final && game.winner === game.home ? 'var(--success)' : 'var(--cream)'}}>
+                            {game.home}
+                          </div>
+                        </div>
+                        <div style={{display:'flex', alignItems:'center', gap:6}}>
+                          <input className="form-input" type="number"
+                            value={game.homeScore === null ? '' : game.homeScore}
+                            onChange={e => handlePickDayScoreChange(game.id, 'homeScore', e.target.value === '' ? null : e.target.value)}
+                            disabled={game.final}
+                            style={{width:55, textAlign:'center', padding:'6px 4px', fontSize:14, fontWeight:700}}
+                            placeholder="-"
+                          />
+                          <span style={{color:'var(--muted)', fontSize:12, fontWeight:700}}>—</span>
+                          <input className="form-input" type="number"
+                            value={game.awayScore === null ? '' : game.awayScore}
+                            onChange={e => handlePickDayScoreChange(game.id, 'awayScore', e.target.value === '' ? null : e.target.value)}
+                            disabled={game.final}
+                            style={{width:55, textAlign:'center', padding:'6px 4px', fontSize:14, fontWeight:700}}
+                            placeholder="-"
+                          />
+                        </div>
+                        <div style={{flex:'1 1 120px', minWidth:100, textAlign:'right'}}>
+                          <div style={{fontSize:13, fontWeight:game.final && game.winner === game.away ? 700 : 400, color: game.final && game.winner === game.away ? 'var(--success)' : 'var(--cream)'}}>
+                            {game.away}
+                          </div>
+                        </div>
+                        <div style={{width:80, textAlign:'right'}}>
+                          {game.final ? (
+                            <button className="badge badge-win" style={{cursor:'pointer', border:'1px solid rgba(74,222,128,.25)'}}
+                                    onClick={() => handlePickDayUnmarkFinal(game.id)}>
+                              FINAL ✓
+                            </button>
+                          ) : (
+                            <button className="badge badge-pending" style={{cursor:'pointer'}}
+                                    onClick={() => handlePickDayMarkFinal(game.id)}>
+                              MARK FINAL
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{padding:'14px 22px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'flex-end', alignItems:'center', gap:12}}>
+                  {saveNotification && (
+                    <span style={{
+                      color:'var(--success)', fontSize:14, fontWeight:700,
+                      padding:'6px 14px', background:'rgba(74,222,128,.1)',
+                      border:'1px solid rgba(74,222,128,.25)', borderRadius:6,
+                    }}>✓ {saveNotification}</span>
+                  )}
+                  <button className="btn btn-primary" onClick={handleSavePickDayGames}>
                     Save &amp; Process Results
                   </button>
                 </div>

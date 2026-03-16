@@ -87,6 +87,26 @@
       animation: shimmer 4s ease-in-out infinite;
       text-shadow: none;
     }
+    /* ── Mobile responsive ── */
+    @media (max-width: 480px) {
+      .site-header .header-inner { padding: 0 10px !important; }
+      .nav-tab { padding: 12px 12px; font-size: 11px; gap: 4px; }
+      .card-header { padding: 14px 14px 12px; flex-wrap: wrap; gap: 8px; }
+      .card-title { font-size: 13px; }
+      .player-row { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+      .game-row { padding: 12px 14px; }
+      .admin-table th { padding: 8px 8px; font-size: 10px; }
+      .admin-table td { padding: 10px 8px; font-size: 12px; }
+      .btn { padding: 9px 16px; font-size: 13px; }
+      .badge { padding: 2px 7px; font-size: 10px; }
+      .form-input, .form-select { padding: 10px 12px; font-size: 13px; }
+      .venmo-bar { font-size: 11px; padding: 4px 8px; }
+      .stat-card { padding: 14px !important; }
+    }
+    @media (max-width: 380px) {
+      .nav-tab { padding: 10px 8px; font-size: 10px; }
+    }
+
     .anim-up   { animation: fadeUp .45s cubic-bezier(.22,1,.36,1) both; }
     .anim-up-1 { animation-delay:  60ms; }
     .anim-up-2 { animation-delay: 120ms; }
@@ -1017,25 +1037,25 @@ function App() {
       {/* Header */}
       <header className="site-header">
         <div className="header-flame" />
-        <div style={{maxWidth:1100, margin:'0 auto', padding:'0 16px', position:'relative'}}>
-          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 0 0'}}>
-            <div style={{display:'flex', alignItems:'center', gap:16}}>
-              <Basketball size={44} spin={true} glow={true} />
-              <div>
-                <div className="anton logo-title" style={{fontSize:26, lineHeight:1.05, letterSpacing:'0.03em'}}>
+        <div className="header-inner" style={{maxWidth:1100, margin:'0 auto', padding:'0 16px', position:'relative'}}>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 0 0', gap:8}}>
+            <div style={{display:'flex', alignItems:'center', gap:10, minWidth:0}}>
+              <Basketball size={36} spin={true} glow={true} />
+              <div style={{minWidth:0}}>
+                <div className="anton logo-title" style={{fontSize:'clamp(16px, 5vw, 26px)', lineHeight:1.05, letterSpacing:'0.03em', whiteSpace:'nowrap'}}>
                   MARCH MADNESS
                 </div>
-                <div className="anton logo-sub" style={{fontSize:14, letterSpacing:'0.18em', marginTop:2}}>
+                <div className="anton logo-sub" style={{fontSize:'clamp(9px, 2.5vw, 14px)', letterSpacing:'0.12em', marginTop:1, whiteSpace:'nowrap'}}>
                   KNOCKOUT POOL — 2026
                 </div>
               </div>
             </div>
-            <div style={{display:'flex', alignItems:'center', gap:14}}>
+            <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
               <div style={{textAlign:'right'}}>
-                <div className="mono" style={{fontSize:26, color:'var(--gold)', fontWeight:700, lineHeight:1}}>
+                <div className="mono" style={{fontSize:'clamp(18px, 5vw, 26px)', color:'var(--gold)', fontWeight:700, lineHeight:1}}>
                   ${totalPot.toLocaleString()}
                 </div>
-                <div style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:4}}>Total Pot</div>
+                <div style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.06em', textTransform:'uppercase', marginTop:2}}>Total Pot</div>
               </div>
               {!isAdmin ? (
                 <button onClick={() => { setShowAdminLogin(true); setAdminPin(''); setAdminErr(''); }}
@@ -1116,7 +1136,7 @@ function App() {
       )}
 
       {/* Main Content */}
-      <main style={{maxWidth:1100, margin:'0 auto', padding:'28px 16px 60px'}}>
+      <main style={{maxWidth:1100, margin:'0 auto', padding:'20px 12px 60px'}}>
 
         {/* ── STANDINGS ── */}
         {activeTab === 'standings' && (
@@ -1460,7 +1480,7 @@ function App() {
                               )}
                             </div>
                           </div>
-                          <div style={{textAlign:'right', minWidth:80}}>
+                          <div style={{textAlign:'right', minWidth:55}}>
                             {game.final ? (
                               <div>
                                 <div className="mono" style={{fontSize:15, fontWeight:700, color:'var(--text)'}}>{game.homeScore}</div>
@@ -1541,7 +1561,7 @@ function App() {
                   </div>
                 </div>
 
-                <div className="card" style={{padding:'24px 26px', marginBottom:20}}>
+                <div className="card" style={{padding:'20px 16px', marginBottom:20}}>
                   <div className="anton" style={{fontSize:18, color:'var(--cream)', letterSpacing:'0.05em', marginBottom:18}}>
                     {matchedPlayer && matchedPlayer.needsBuyback ? 'BUYBACK — SUBMIT YOUR PICKS' : 'SUBMIT YOUR PICKS'}
                   </div>
@@ -1638,16 +1658,16 @@ function App() {
         {activeTab === 'rules' && (
           <div className="anim-up">
             {/* Big heading with basketball */}
-            <div style={{display:'flex', alignItems:'flex-end', gap:20, marginBottom:32}}>
-              <div>
-                <div className="anton" style={{fontSize:42, color:'var(--cream)', lineHeight:1, letterSpacing:'0.03em'}}>
+            <div style={{display:'flex', alignItems:'flex-end', gap:16, marginBottom:24, flexWrap:'wrap'}}>
+              <div style={{flex:1, minWidth:200}}>
+                <div className="anton" style={{fontSize:'clamp(28px, 8vw, 42px)', color:'var(--cream)', lineHeight:1, letterSpacing:'0.03em'}}>
                   HOW TO PLAY
                 </div>
                 <div style={{color:'var(--muted)', fontSize:14, marginTop:6, maxWidth:500, lineHeight:1.6}}>
                   Last person standing wins it all. Simple in theory, brutal in practice.
                 </div>
               </div>
-              <Basketball size={80} bounce={true} glow={true} />
+              <Basketball size={60} bounce={true} glow={true} />
             </div>
 
             <div style={{display:'grid', gap:14}}>
@@ -1685,9 +1705,9 @@ function App() {
         {/* ── ADMIN CONSOLE ── */}
         {activeTab === 'admin' && isAdmin && (
           <div className="anim-up">
-            <div style={{display:'flex', alignItems:'flex-end', gap:20, marginBottom:32}}>
+            <div style={{display:'flex', alignItems:'flex-end', gap:20, marginBottom:24}}>
               <div>
-                <div className="anton" style={{fontSize:42, color:'var(--cream)', lineHeight:1, letterSpacing:'0.03em'}}>
+                <div className="anton" style={{fontSize:'clamp(28px, 8vw, 42px)', color:'var(--cream)', lineHeight:1, letterSpacing:'0.03em'}}>
                   ADMIN CONSOLE
                 </div>
                 <div style={{color:'var(--muted)', fontSize:14, marginTop:6}}>

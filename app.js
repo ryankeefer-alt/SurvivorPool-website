@@ -185,6 +185,7 @@ app.post('/api/picks', function(req, res) {
   var day = body.day;
   var name = body.name;
   var picks = body.picks;
+  var email = body.email;
 
   if (!name || !day || !Array.isArray(picks) || picks.length === 0) {
     return res.status(400).json({ error: 'Missing required fields.' });
@@ -226,6 +227,14 @@ app.post('/api/picks', function(req, res) {
 
   if (day === 'thursday_r1') {
     // Thursday: create new entry
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'Email address is required.' });
+    }
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+
     var requiredPicks = PICKS_PER_DAY[day] || 2;
     if (picks.length !== requiredPicks) {
       return res.status(400).json({ error: 'Exactly ' + requiredPicks + ' pick(s) required.' });
@@ -262,6 +271,7 @@ app.post('/api/picks', function(req, res) {
     var newPlayer = {
       id: Date.now(),
       name: name.trim(),
+      email: email.trim(),
       status: status,
       buybacks: 0,
       needsBuyback: false,

@@ -985,6 +985,7 @@ function App() {
 
   // ── Submit Picks State ──
   const [pickerName,      setPickerName]      = useState('');
+  const [pickerEmail,     setPickerEmail]     = useState('');
   const [teamPicks,       setTeamPicks]       = useState([]);
   const [submitted,       setSubmitted]       = useState(false);
   const [submitErr,       setSubmitErr]       = useState('');
@@ -1026,25 +1027,30 @@ function App() {
     setSubmitted(false);
     setSubmitErr('');
     setPickerName('');
+    setPickerEmail('');
     setTeamPicks([]);
   }, []);
 
   const handleSubmitPicks = () => {
     setSubmitErr('');
     if (!pickerName.trim()) { setSubmitErr('Please enter your name.'); return; }
+    if (pickDay === 'thursday_r1' && !pickerEmail.trim()) { setSubmitErr('Please enter your email address.'); return; }
+    if (pickDay === 'thursday_r1' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pickerEmail.trim())) { setSubmitErr('Please enter a valid email address.'); return; }
     const isNonePick = teamPicks.length === 1 && teamPicks[0] === 'None';
     if (!isNonePick && teamPicks.filter(t => t).length < requiredPicks) { setSubmitErr(`Please select ${requiredPicks} team${requiredPicks > 1 ? 's' : ''}.`); return; }
     if (!isNonePick && new Set(teamPicks).size < teamPicks.length) { setSubmitErr('You must pick different teams.'); return; }
 
     setSubmitting(true);
+    const payload = {
+      name: pickerName.trim(),
+      day: pickDay,
+      picks: teamPicks.filter(t => t),
+    };
+    if (pickDay === 'thursday_r1') payload.email = pickerEmail.trim();
     fetch('/api/picks', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        name: pickerName.trim(),
-        day: pickDay,
-        picks: teamPicks.filter(t => t),
-      })
+      body: JSON.stringify(payload)
     })
     .then(r => r.json())
     .then(data => {
@@ -1604,7 +1610,7 @@ function App() {
                 </div>
                 <div style={{display:'flex', gap:10, marginTop:24, justifyContent:'center'}}>
                   <button className="btn btn-ghost"
-                          onClick={() => { setSubmitted(false); setTeamPicks([]); setPickerName(''); }}>
+                          onClick={() => { setSubmitted(false); setTeamPicks([]); setPickerName(''); setPickerEmail(''); }}>
                     Submit Another Entry
                   </button>
                   <button className="btn btn-primary" onClick={() => { handleTabChange('standings'); }}>
@@ -1638,6 +1644,14 @@ function App() {
                     <input className="form-input" placeholder="Enter your name"
                            value={pickerName} onChange={e => setPickerName(e.target.value)} />
                   </div>
+
+                  {pickDay === 'thursday_r1' && (
+                    <div style={{marginBottom:16}}>
+                      <label className="form-label">Email Address</label>
+                      <input className="form-input" type="email" placeholder="Enter your email"
+                             value={pickerEmail} onChange={e => setPickerEmail(e.target.value)} />
+                    </div>
+                  )}
 
                   {/* Buyback info banner */}
                   {matchedPlayer && matchedPlayer.needsBuyback && (

@@ -502,6 +502,7 @@ function App() {
   const [gamesData, setGamesData]   = useState({});
   const [closedDays, setClosedDays] = useState(new Set());
   const [submissionDay, setSubmissionDay] = useState('thursday_r1');
+  const [pickDay, setPickDay]       = useState('thursday_r1');
   const [teamsData, setTeamsData]   = useState(TEAMS_BY_DAY_DEFAULT);
   const [loading, setLoading]       = useState(true);
   const [isAdmin, setIsAdmin]       = useState(false);
@@ -519,6 +520,7 @@ function App() {
         if (data.config) {
           setClosedDays(new Set(data.config.closedDays || []));
           setSubmissionDay(data.config.currentDay || 'thursday_r1');
+          setPickDay(data.config.pickDay || data.config.currentDay || 'thursday_r1');
         }
         if (data.teams) setTeamsData(data.teams);
         setLoading(false);
@@ -537,7 +539,7 @@ function App() {
     return w;
   }, [gamesData]);
 
-  const entriesClosed = closedDays.has(submissionDay);
+  const entriesClosed = closedDays.has(pickDay);
 
   // ── Admin login ──
   const handleAdminLogin = () => {
@@ -577,6 +579,7 @@ function App() {
     .then(data => {
       if (data.ok) {
         setClosedDays(new Set(data.closedDays || []));
+        if (data.pickDay) setPickDay(data.pickDay);
         fetchState();
       }
     });
@@ -845,14 +848,14 @@ function App() {
       return { finished: true, winners: [alivePlayers[0].name], reason: 'Last player standing!' };
     }
     // Only check if current day has teams (games imported)
-    const nextTeams = teamsData[submissionDay] || [];
+    const nextTeams = teamsData[pickDay] || [];
     if (nextTeams.length === 0) return null;
     // Only check players who haven't submitted picks for the current day yet
-    const needPicks = alivePlayers.filter(p => !p.picks[submissionDay]);
+    const needPicks = alivePlayers.filter(p => !p.picks[pickDay]);
     // If everyone already submitted picks, no check needed yet
     if (needPicks.length === 0) return null;
 
-    const picksPerDay = PICKS_PER_DAY[submissionDay] || 1;
+    const picksPerDay = PICKS_PER_DAY[pickDay] || 1;
     const playerAvailable = needPicks.map(p => {
       const used = [];
       Object.values(p.picks || {}).forEach(dayPicks => {
@@ -878,14 +881,14 @@ function App() {
     }
 
     return null;
-  }, [alivePlayers, eliminatedPlayers, teamsData, submissionDay]);
+  }, [alivePlayers, eliminatedPlayers, teamsData, pickDay]);
 
   // Check if an eliminated player can buy back (only the round immediately after their loss)
   const canBuyback = useCallback((player) => {
     if (player.status !== 'eliminated' || player.needsBuyback) return false;
-    if (!BUYBACK_DAYS.has(submissionDay)) return false;
+    if (!BUYBACK_DAYS.has(pickDay)) return false;
     if (player.buybacks >= 3) return false;
-    const currentIdx = DAY_ORDER.indexOf(submissionDay);
+    const currentIdx = DAY_ORDER.indexOf(pickDay);
     // Find the day they were last eliminated
     for (let d = DAY_ORDER.length - 1; d >= 0; d--) {
       if (player.results[DAY_ORDER[d]] === 'loss') {
@@ -893,11 +896,11 @@ function App() {
       }
     }
     return false;
-  }, [submissionDay]);
+  }, [pickDay]);
 
   // ── Pick distribution for bar chart (only computed when entries are closed) ──
   const pickDistribution = useMemo(() => {
-    if (!entriesClosed || players.length === 0) return [];
+    if (!closedDays.has(submissionDay) || players.length === 0) return [];
     const counts = {};
     players.forEach(p => {
       const dayPicks = p.picks[submissionDay] || [];
@@ -923,21 +926,21 @@ function App() {
   const [submitErr,       setSubmitErr]       = useState('');
   const [submitting,      setSubmitting]      = useState(false);
 
-  const currentTeams = teamsData[submissionDay] || [];
-  const pastFirstDay = DAY_ORDER.indexOf(submissionDay) > 0;
+  const currentTeams = teamsData[pickDay] || [];
+  const pastFirstDay = DAY_ORDER.indexOf(pickDay) > 0;
 
   // Look up the current player to detect buyback status and used teams
   const matchedPlayer = useMemo(() => {
-    if (!pickerName.trim() || submissionDay === 'thursday_r1') return null;
+    if (!pickerName.trim() || pickDay === 'thursday_r1') return null;
     return players.find(p => p.name.toLowerCase() === pickerName.trim().toLowerCase());
-  }, [pickerName, players, submissionDay]);
+  }, [pickerName, players, pickDay]);
 
   const requiredPicks = useMemo(() => {
-    if (matchedPlayer && matchedPlayer.needsBuyback && BUYBACK_PICKS[submissionDay]) {
-      return BUYBACK_PICKS[submissionDay];
+    if (matchedPlayer && matchedPlayer.needsBuyback && BUYBACK_PICKS[pickDay]) {
+      return BUYBACK_PICKS[pickDay];
     }
-    return PICKS_PER_DAY[submissionDay] || 1;
-  }, [matchedPlayer, submissionDay]);
+    return PICKS_PER_DAY[pickDay] || 1;
+  }, [matchedPlayer, pickDay]);
 
   // Teams the matched player already used in previous days (cannot reuse)
   const usedTeams = useMemo(() => {
@@ -975,7 +978,7 @@ function App() {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         name: pickerName.trim(),
-        day: submissionDay,
+        day: pickDay,
         picks: teamPicks.filter(t => t),
       })
     })
@@ -1215,7 +1218,7 @@ function App() {
                   }}>
                     <div>
                       <div style={{fontWeight:700, color:'var(--accent)', fontSize:13, letterSpacing:'0.05em', textTransform:'uppercase'}}>
-                        {DAY_FULL[submissionDay]} — Entries Open
+                        {DAY_FULL[pickDay]} — Entries Open
                       </div>
                       <div style={{fontSize:12, color:'var(--muted)', marginTop:2}}>
                         Submit your picks before the admin locks entries.
@@ -1253,13 +1256,19 @@ function App() {
                         </div>
                         <div style={{display:'flex', alignItems:'center', gap:8}}>
                           <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                            {Object.entries(p.picks).filter(([day]) => day !== submissionDay || entriesClosed).map(([day, picks]) =>
+                            {Object.entries(p.picks).filter(([day]) => closedDays.has(day) || (day !== pickDay)).map(([day, picks]) =>
                               picks.map(t => (
                                 <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
                               ))
                             )}
                           </div>
-                          {pastFirstDay && !entriesClosed && !p.picks[submissionDay] && (
+                          {pastFirstDay && !entriesClosed && !p.picks[pickDay] && (() => {
+                            // Only show MAKE PICKS if previous day result is 'win' (or no previous day picks)
+                            const pdIdx = DAY_ORDER.indexOf(pickDay);
+                            const prevDay = pdIdx > 0 ? DAY_ORDER[pdIdx - 1] : null;
+                            const prevResult = prevDay && p.results[prevDay];
+                            const canPick = !prevDay || !p.picks[prevDay] || prevResult === 'win';
+                            return canPick ? (
                             <button
                               onClick={() => { setPickerName(p.name); setTeamPicks([]); setSubmitted(false); setSubmitErr(''); setActiveTab('picks'); }}
                               style={{
@@ -1270,7 +1279,10 @@ function App() {
                               onMouseOver={e => { e.currentTarget.style.background='rgba(255,184,0,.22)'; }}
                               onMouseOut={e => { e.currentTarget.style.background='rgba(255,184,0,.12)'; }}
                             >MAKE PICKS</button>
-                          )}
+                            ) : (
+                            <span className="badge badge-pending" style={{fontSize:9}}>AWAITING RESULTS</span>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))
@@ -1294,7 +1306,7 @@ function App() {
                         </div>
                         <div style={{display:'flex', alignItems:'center', gap:8}}>
                           <div style={{display:'flex', flexWrap:'wrap', gap:4, justifyContent:'flex-end'}}>
-                            {Object.entries(p.picks).filter(([day]) => day !== submissionDay || entriesClosed).map(([day, picks]) =>
+                            {Object.entries(p.picks).filter(([day]) => closedDays.has(day) || (day !== pickDay)).map(([day, picks]) =>
                               picks.map(t => (
                                 <span key={`${day}-${t}`} className={`badge ${getPickBadgeClass(t, day)}`} style={{fontSize:10}}>{t}</span>
                               ))
@@ -1500,10 +1512,10 @@ function App() {
               <div className="card" style={{padding:'40px 32px', textAlign:'center'}}>
                 <div style={{fontSize:48, marginBottom:12}}>🔒</div>
                 <div className="anton" style={{fontSize:24, color:'var(--danger)', letterSpacing:'0.04em'}}>
-                  {DAY_LABELS[submissionDay]} — ENTRIES CLOSED
+                  {DAY_LABELS[pickDay]} — ENTRIES CLOSED
                 </div>
                 <div style={{color:'var(--muted)', marginTop:10, fontSize:14}}>
-                  Submissions for {DAY_LABELS[submissionDay]} have been locked. Head to Standings to see picks.
+                  Submissions for {DAY_LABELS[pickDay]} have been locked. Head to Standings to see picks.
                 </div>
                 <button className="btn btn-primary" style={{marginTop:20}} onClick={() => handleTabChange('standings')}>
                   View Standings
@@ -1516,9 +1528,9 @@ function App() {
                   PICKS LOCKED IN. BEAR DOWN!
                 </div>
                 <div style={{color:'var(--muted)', marginTop:8}}>
-                  {pickerName} — {DAY_LABELS[submissionDay]}
+                  {pickerName} — {DAY_LABELS[pickDay]}
                 </div>
-                {submissionDay === 'thursday_r1' && (
+                {pickDay === 'thursday_r1' && (
                   <div style={{fontSize:13, color:'var(--accent)', marginTop:6}}>$25 entry fee added to pot</div>
                 )}
                 <div style={{marginTop:16, display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center'}}>
@@ -1545,9 +1557,9 @@ function App() {
                 }}>
                   <Basketball size={28} />
                   <div>
-                    <div style={{fontWeight:700, color:'var(--accent)', fontSize:13, letterSpacing:'0.05em', textTransform:'uppercase'}}>{DAY_FULL[submissionDay] || DAY_LABELS[submissionDay]}</div>
+                    <div style={{fontWeight:700, color:'var(--accent)', fontSize:13, letterSpacing:'0.05em', textTransform:'uppercase'}}>{DAY_FULL[pickDay] || DAY_LABELS[pickDay]}</div>
                     <div style={{fontSize:12, color:'var(--muted)', marginTop:2}}>
-                      Pick {requiredPicks} winner{requiredPicks > 1 ? 's' : ''}. {requiredPicks > 1 ? 'All must' : 'Must'} win outright.{submissionDay === 'thursday_r1' ? ' Entry fee: $25.' : ''}
+                      Pick {requiredPicks} winner{requiredPicks > 1 ? 's' : ''}. {requiredPicks > 1 ? 'All must' : 'Must'} win outright.{pickDay === 'thursday_r1' ? ' Entry fee: $25.' : ''}
                     </div>
                   </div>
                 </div>
@@ -1582,7 +1594,7 @@ function App() {
                     </div>
                   )}
 
-                  {availableTeams.length === 0 && pickerName.trim() && submissionDay !== 'thursday_r1' ? (
+                  {availableTeams.length === 0 && pickerName.trim() && pickDay !== 'thursday_r1' ? (
                     <div style={{marginBottom:14}}>
                       <div style={{
                         background:'rgba(248,113,113,.08)', border:'1px solid rgba(248,113,113,.2)',
@@ -1633,7 +1645,7 @@ function App() {
                           onClick={handleSubmitPicks} disabled={submitting}>
                     {submitting ? 'Submitting...' : (
                       teamPicks[0] === 'None' ? 'Lock In None — Automatic Loss' :
-                      submissionDay === 'thursday_r1' ? 'Lock In Picks — $25 Entry' :
+                      pickDay === 'thursday_r1' ? 'Lock In Picks — $25 Entry' :
                       matchedPlayer && matchedPlayer.needsBuyback ? `Lock In ${requiredPicks} Buyback Picks` :
                       'Lock In Picks'
                     )}
@@ -1710,10 +1722,8 @@ function App() {
             {/* Current Day Status */}
             <div className="card anim-up anim-up-1" style={{marginBottom:20}}>
               <div className="card-header">
-                <div className="card-title">CURRENT DAY</div>
-                <span className={`badge ${entriesClosed ? 'badge-out' : 'badge-alive'}`}>
-                  {entriesClosed ? 'LOCKED' : 'OPEN'}
-                </span>
+                <div className="card-title">GAME DAY</div>
+                <span className="badge badge-alive">SCORING</span>
               </div>
               <div style={{padding:'22px'}}>
                 <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20}}>
@@ -1731,14 +1741,30 @@ function App() {
                   </div>
                 </div>
 
+                {/* Pick Day info when different from game day */}
+                {pickDay !== submissionDay && (
+                  <div style={{
+                    background:'rgba(74,222,128,.06)', border:'1px solid rgba(74,222,128,.2)',
+                    borderRadius:8, padding:'12px 16px', marginBottom:16, fontSize:13,
+                  }}>
+                    <div style={{fontWeight:700, color:'var(--success)', letterSpacing:'0.04em', marginBottom:4}}>
+                      PICK DAY: {DAY_LABELS[pickDay]}
+                    </div>
+                    <div style={{color:'var(--muted)', fontSize:12}}>
+                      Players with finalized wins for {DAY_LABELS[submissionDay]} can submit {DAY_LABELS[pickDay]} picks.
+                      {' '}{players.filter(p => p.picks && p.picks[pickDay]).length} picks submitted for {DAY_LABELS[pickDay]}.
+                    </div>
+                  </div>
+                )}
+
                 <div style={{display:'flex', gap:12, flexWrap:'wrap'}}>
                   {entriesClosed ? (
-                    <button className="btn btn-gold" onClick={() => handleUnlockDay(submissionDay)}>
-                      🔓 Unlock {DAY_LABELS[submissionDay]} Entries
+                    <button className="btn btn-gold" onClick={() => handleUnlockDay(pickDay)}>
+                      🔓 Unlock {DAY_LABELS[pickDay]} Entries
                     </button>
                   ) : (
-                    <button className="btn btn-primary" onClick={() => handleLockDay(submissionDay)}>
-                      🔒 Lock {DAY_LABELS[submissionDay]} Entries
+                    <button className="btn btn-primary" onClick={() => handleLockDay(pickDay)}>
+                      🔒 Lock {DAY_LABELS[pickDay]} Entries
                     </button>
                   )}
 
@@ -1850,6 +1876,7 @@ function App() {
               <div style={{padding:0}}>
                 {DAY_ORDER.map((day, i) => {
                   const isCurrent = day === submissionDay;
+                  const isPickDay = day === pickDay;
                   const isLocked = closedDays.has(day);
                   const isPast = DAY_ORDER.indexOf(day) < DAY_ORDER.indexOf(submissionDay);
                   const picksCount = players.filter(p => p.picks && p.picks[day]).length;
@@ -1868,7 +1895,8 @@ function App() {
                         <span style={{fontSize:13, fontWeight:isCurrent ? 700 : 400, color: isCurrent ? 'var(--cream)' : 'var(--muted)'}}>
                           {DAY_LABELS[day]}
                         </span>
-                        {isCurrent && <span className="badge badge-pending" style={{fontSize:9}}>CURRENT</span>}
+                        {isCurrent && <span className="badge badge-pending" style={{fontSize:9}}>SCORING</span>}
+                        {isPickDay && !isCurrent && <span className="badge badge-alive" style={{fontSize:9}}>PICKS OPEN</span>}
                       </div>
                       <div style={{display:'flex', alignItems:'center', gap:10}}>
                         <span style={{fontSize:12, color:'var(--muted)'}}>{picksCount} picks</span>

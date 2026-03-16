@@ -1,0 +1,22 @@
+{
+  "games": {
+    "thursday_r1": [
+      { "id": 1, "home": "Michigan", "away": "Prairie View A&M/Lehigh", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 2, "home": "Duke", "away": "Siena", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 3, "home": "Houston", "away": "Idaho", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 4, "home": "Illinois", "away": "Penn", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 5, "home": "Gonzaga", "away": "Kennesaw State", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 6, "home": "Michigan State", "away": "North Dakota State", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 7, "home": "Nebraska", "away": "Troy", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 8, "home": "Arkansas", "away": "Hawai'i", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 9, "home": "Vanderbilt", "away": "McNeese", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 10, "home": "Wisconsin", "away": "High Point", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 11, "home": "North Carolina", "away": "VCU", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 12, "home": "BYU", "away": "Miami (Ohio)/SMU", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 13, "home": "Louisville", "away": "South Florida", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 14, "home": "Saint Mary's", "away": "Texas A&M", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 15, "home": "Georgia", "away": "Saint Louis", "homeScore": null, "awayScore": null, "winner": null, "final": false },
+      { "id": 16, "home": "Ohio State", "away": "TCU", "homeScore": null, "awayScore": null, "winner": null, "final": false }
+    ]
+  }
+}

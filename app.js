@@ -30,10 +30,13 @@ function writeJSON(filePath, data) {
 
 // Auto-create data files if they don't exist (first deploy)
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(CONFIG_PATH)) writeJSON(CONFIG_PATH, { currentDay: 'thursday_r1', closedDays: [], adminPin: 'KeeferNet2@3#', buybackDays: ['friday_r1','saturday_r2','sunday_r2'] });
-// Update admin PIN if it's still the old default
+if (!fs.existsSync(CONFIG_PATH)) writeJSON(CONFIG_PATH, { currentDay: 'thursday_r1', pickDay: 'thursday_r1', closedDays: [], adminPin: 'KeeferNet2@3#', buybackDays: ['friday_r1','saturday_r2','sunday_r2'] });
+// Update admin PIN if it's still the old default; ensure pickDay exists
 var _cfg = readJSON(CONFIG_PATH);
-if (_cfg.adminPin === '2025') { _cfg.adminPin = 'KeeferNet2@3#'; writeJSON(CONFIG_PATH, _cfg); }
+var _cfgChanged = false;
+if (_cfg.adminPin === '2025') { _cfg.adminPin = 'KeeferNet2@3#'; _cfgChanged = true; }
+if (!_cfg.pickDay) { _cfg.pickDay = _cfg.currentDay || 'thursday_r1'; _cfgChanged = true; }
+if (_cfgChanged) writeJSON(CONFIG_PATH, _cfg);
 if (!fs.existsSync(PLAYERS_PATH)) writeJSON(PLAYERS_PATH, []);
 if (!fs.existsSync(GAMES_PATH)) writeJSON(GAMES_PATH, {});
 
@@ -192,6 +195,13 @@ app.post('/api/picks', function(req, res) {
     return res.status(400).json({ error: 'Entries for this day are closed.' });
   }
 
+  // Check if the pick day has advanced to this day yet
+  var pickDayIdx = DAY_ORDER.indexOf(config.pickDay || config.currentDay);
+  var reqDayIdx = DAY_ORDER.indexOf(day);
+  if (reqDayIdx > pickDayIdx) {
+    return res.status(400).json({ error: 'Picks for this day are not open yet.' });
+  }
+
   // Check for duplicate teams in submission
   var uniquePicks = [];
   for (var i = 0; i < picks.length; i++) {
@@ -273,6 +283,15 @@ app.post('/api/picks', function(req, res) {
     }
     if (player.picks[day]) {
       return res.status(400).json({ error: 'You already submitted picks for this day.' });
+    }
+
+    // Require previous day's result to be 'win' before picking the next day
+    var dayIdx = DAY_ORDER.indexOf(day);
+    if (dayIdx > 0 && !player.needsBuyback) {
+      var prevDay = DAY_ORDER[dayIdx - 1];
+      if (player.picks[prevDay] && player.results[prevDay] !== 'win') {
+        return res.status(400).json({ error: 'Your picks for ' + prevDay.replace('_', ' ') + ' are not yet finalized as wins. Check back once results are final.' });
+      }
     }
 
     // Handle "None" pick — player has no available teams, automatic loss when finalized
@@ -371,12 +390,19 @@ app.post('/api/admin/lock', function(req, res) {
     if (config.closedDays.indexOf(day) === -1) {
       config.closedDays.push(day);
     }
+    // Auto-advance pickDay to the next day when locking the current pick day
+    if (day === config.pickDay) {
+      var pickIdx = DAY_ORDER.indexOf(config.pickDay);
+      if (pickIdx < DAY_ORDER.length - 1) {
+        config.pickDay = DAY_ORDER[pickIdx + 1];
+      }
+    }
   } else if (action === 'unlock') {
     config.closedDays = config.closedDays.filter(function(d) { return d !== day; });
   }
 
   writeJSON(CONFIG_PATH, config);
-  res.json({ ok: true, closedDays: config.closedDays });
+  res.json({ ok: true, closedDays: config.closedDays, pickDay: config.pickDay });
 });
 
 /* ── POST /api/admin/advance-day ── move to next day */
@@ -386,6 +412,11 @@ app.post('/api/admin/advance-day', function(req, res) {
 
   if (currentIdx < DAY_ORDER.length - 1) {
     config.currentDay = DAY_ORDER[currentIdx + 1];
+    // Ensure pickDay is at least as far as currentDay
+    var pickDayIdx = DAY_ORDER.indexOf(config.pickDay || config.currentDay);
+    if (pickDayIdx < currentIdx + 1) {
+      config.pickDay = config.currentDay;
+    }
     writeJSON(CONFIG_PATH, config);
     res.json({ ok: true, currentDay: config.currentDay });
   } else {
@@ -499,17 +530,18 @@ app.post('/api/buyback', function(req, res) {
   if (player.needsBuyback) return res.status(400).json({ error: 'You already initiated a buyback. Submit your picks to complete it.' });
   if (player.buybacks >= 3) return res.status(400).json({ error: 'Maximum buybacks (3) reached.' });
 
+  var activePickDay = config.pickDay || config.currentDay;
   var buybackDays = config.buybackDays || ['friday_r1', 'saturday_r2', 'sunday_r2'];
-  if (buybackDays.indexOf(config.currentDay) === -1) {
+  if (buybackDays.indexOf(activePickDay) === -1) {
     return res.status(400).json({ error: 'No buybacks allowed for this round.' });
   }
 
-  if (config.closedDays && config.closedDays.indexOf(config.currentDay) !== -1) {
+  if (config.closedDays && config.closedDays.indexOf(activePickDay) !== -1) {
     return res.status(400).json({ error: 'Entries are closed. Cannot buy back right now.' });
   }
 
   // Only allow buyback on the day immediately after elimination
-  var currentIdx = DAY_ORDER.indexOf(config.currentDay);
+  var currentIdx = DAY_ORDER.indexOf(activePickDay);
   var eliminatedDay = null;
   for (var d = DAY_ORDER.length - 1; d >= 0; d--) {
     if (player.results[DAY_ORDER[d]] === 'loss') {
@@ -670,6 +702,7 @@ app.post('/api/admin/reset', function(req, res) {
   // Reset config: back to thursday_r1, clear closed days, preserve PIN
   var freshConfig = {
     currentDay: 'thursday_r1',
+    pickDay: 'thursday_r1',
     closedDays: [],
     adminPin: config.adminPin,
     buybackDays: ['friday_r1', 'saturday_r2', 'sunday_r2']

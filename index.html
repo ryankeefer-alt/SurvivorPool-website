@@ -839,8 +839,9 @@ function App() {
   // If all alive players have no available teams or are all forced into the same pick(s), pool is over
   const poolResult = useMemo(() => {
     if (alivePlayers.length === 0) return null;
-    // Single player left — they win
-    if (alivePlayers.length === 1) {
+    // Single player left AND at least one eliminated — they win
+    // (Don't declare a winner if there's only one player total and nobody has been eliminated yet)
+    if (alivePlayers.length === 1 && eliminatedPlayers.length > 0) {
       return { finished: true, winners: [alivePlayers[0].name], reason: 'Last player standing!' };
     }
     // Only check if current day has teams (games imported)
@@ -877,7 +878,7 @@ function App() {
     }
 
     return null;
-  }, [alivePlayers, teamsData, submissionDay]);
+  }, [alivePlayers, eliminatedPlayers, teamsData, submissionDay]);
 
   // Check if an eliminated player can buy back (only the round immediately after their loss)
   const canBuyback = useCallback((player) => {

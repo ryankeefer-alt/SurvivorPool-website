@@ -36,22 +36,22 @@ var _cfg = readJSON(CONFIG_PATH);
 if (_cfg.adminPin === '2025') { _cfg.adminPin = 'KeeferNet2@3#'; writeJSON(CONFIG_PATH, _cfg); }
 if (!fs.existsSync(PLAYERS_PATH)) writeJSON(PLAYERS_PATH, []);
 if (!fs.existsSync(GAMES_PATH)) writeJSON(GAMES_PATH, { thursday_r1: [
-  { id:1, home:'Houston', away:'SIU Edwardsville', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:2, home:'Auburn', away:'Alabama State', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:3, home:"St. John's", away:'Omaha', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:4, home:'Tennessee', away:'Wofford', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:5, home:'Wisconsin', away:'Montana', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:6, home:'Texas Tech', away:'UNC Wilmington', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:7, home:'Purdue', away:'High Point', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:8, home:'Texas A&M', away:'Yale', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:9, home:'Michigan', away:'UC San Diego', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:10, home:'Clemson', away:'McNeese State', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:11, home:'BYU', away:'VCU', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:12, home:'Missouri', away:'Drake', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:13, home:'UCLA', away:'Utah State', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:14, home:'Kansas', away:'Arkansas', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:15, home:'Gonzaga', away:'Georgia', homeScore:null, awayScore:null, winner:null, final:false },
-  { id:16, home:'Louisville', away:'Creighton', homeScore:null, awayScore:null, winner:null, final:false }
+  { id:1, home:'Michigan', away:'Prairie View A&M/Lehigh', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:2, home:'Duke', away:'Siena', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:3, home:'Houston', away:'Idaho', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:4, home:'Illinois', away:'Penn', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:5, home:'Gonzaga', away:'Kennesaw State', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:6, home:'Michigan State', away:'North Dakota State', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:7, home:'Nebraska', away:'Troy', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:8, home:'Arkansas', away:"Hawai'i", homeScore:null, awayScore:null, winner:null, final:false },
+  { id:9, home:'Vanderbilt', away:'McNeese', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:10, home:'Wisconsin', away:'High Point', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:11, home:'North Carolina', away:'VCU', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:12, home:'BYU', away:'Miami (Ohio)/SMU', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:13, home:'Louisville', away:'South Florida', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:14, home:'Saint Mary\'s', away:'Texas A&M', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:15, home:'Georgia', away:'Saint Louis', homeScore:null, awayScore:null, winner:null, final:false },
+  { id:16, home:'Ohio State', away:'TCU', homeScore:null, awayScore:null, winner:null, final:false }
 ]});
 
 /* ────────────────────────────────
@@ -79,12 +79,12 @@ const BUYBACK_PICKS = {
 
 const TEAMS_BY_DAY = {
   thursday_r1: [
-    'Alabama State','Arkansas','Auburn','BYU','Clemson','Creighton','Drake',
-    'Georgia','Gonzaga','High Point','Houston','Kansas','Louisville',
-    'McNeese State','Michigan','Missouri','Montana','Omaha','Purdue',
-    'SIU Edwardsville',"St. John's",'Tennessee','Texas A&M','Texas Tech',
-    'UC San Diego','UCLA','UNC Wilmington','Utah State','VCU',
-    'Wisconsin','Wofford','Yale'
+    'Arkansas','BYU','Duke','Georgia','Gonzaga','High Point','Houston',
+    "Hawai'i",'Idaho','Illinois','Kennesaw State','Louisville','McNeese',
+    'Miami (Ohio)/SMU','Michigan','Michigan State','Nebraska','North Carolina',
+    'North Dakota State','Ohio State','Penn','Prairie View A&M/Lehigh',
+    'Saint Louis',"Saint Mary's",'Siena','South Florida','TCU','Texas A&M',
+    'Troy','VCU','Vanderbilt','Wisconsin'
   ],
   friday_r1: [],
 };
@@ -709,22 +709,22 @@ app.post('/api/admin/reset', function(req, res) {
   // Reset games: thursday_r1 with default games, all other rounds empty
   var freshGames = {
     thursday_r1: [
-      { id:1, home:'Houston', away:'SIU Edwardsville', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:2, home:'Auburn', away:'Alabama State', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:3, home:"St. John's", away:'Omaha', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:4, home:'Tennessee', away:'Wofford', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:5, home:'Wisconsin', away:'Montana', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:6, home:'Texas Tech', away:'UNC Wilmington', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:7, home:'Purdue', away:'High Point', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:8, home:'Texas A&M', away:'Yale', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:9, home:'Michigan', away:'UC San Diego', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:10, home:'Clemson', away:'McNeese State', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:11, home:'BYU', away:'VCU', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:12, home:'Missouri', away:'Drake', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:13, home:'UCLA', away:'Utah State', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:14, home:'Kansas', away:'Arkansas', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:15, home:'Gonzaga', away:'Georgia', homeScore:null, awayScore:null, winner:null, final:false },
-      { id:16, home:'Louisville', away:'Creighton', homeScore:null, awayScore:null, winner:null, final:false }
+      { id:1, home:'Michigan', away:'Prairie View A&M/Lehigh', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:2, home:'Duke', away:'Siena', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:3, home:'Houston', away:'Idaho', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:4, home:'Illinois', away:'Penn', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:5, home:'Gonzaga', away:'Kennesaw State', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:6, home:'Michigan State', away:'North Dakota State', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:7, home:'Nebraska', away:'Troy', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:8, home:'Arkansas', away:"Hawai'i", homeScore:null, awayScore:null, winner:null, final:false },
+      { id:9, home:'Vanderbilt', away:'McNeese', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:10, home:'Wisconsin', away:'High Point', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:11, home:'North Carolina', away:'VCU', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:12, home:'BYU', away:'Miami (Ohio)/SMU', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:13, home:'Louisville', away:'South Florida', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:14, home:'Saint Mary\'s', away:'Texas A&M', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:15, home:'Georgia', away:'Saint Louis', homeScore:null, awayScore:null, winner:null, final:false },
+      { id:16, home:'Ohio State', away:'TCU', homeScore:null, awayScore:null, winner:null, final:false }
     ],
     friday_r1: [],
     saturday_r2: [],

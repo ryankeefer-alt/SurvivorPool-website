@@ -30,7 +30,10 @@ function writeJSON(filePath, data) {
 
 // Auto-create data files if they don't exist (first deploy)
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(CONFIG_PATH)) writeJSON(CONFIG_PATH, { currentDay: 'thursday_r1', closedDays: [], adminPin: '2025', buybackDays: ['friday_r1','saturday_r2','sunday_r2'] });
+if (!fs.existsSync(CONFIG_PATH)) writeJSON(CONFIG_PATH, { currentDay: 'thursday_r1', closedDays: [], adminPin: 'KeeferNet2@3#', buybackDays: ['friday_r1','saturday_r2','sunday_r2'] });
+// Update admin PIN if it's still the old default
+var _cfg = readJSON(CONFIG_PATH);
+if (_cfg.adminPin === '2025') { _cfg.adminPin = 'KeeferNet2@3#'; writeJSON(CONFIG_PATH, _cfg); }
 if (!fs.existsSync(PLAYERS_PATH)) writeJSON(PLAYERS_PATH, []);
 if (!fs.existsSync(GAMES_PATH)) writeJSON(GAMES_PATH, { thursday_r1: [
   { id:1, home:'Houston', away:'SIU Edwardsville', homeScore:null, awayScore:null, winner:null, final:false },

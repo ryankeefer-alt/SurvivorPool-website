@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>March Madness Knockout Pool 2025</title>
+  <title>March Madness Knockout Pool 2026</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -68,6 +68,24 @@
     @keyframes shimmer {
       0%   { background-position: -200% 0; }
       100% { background-position:  200% 0; }
+    }
+    .logo-title {
+      background: linear-gradient(135deg, #F2E8D9 0%, #FFB800 40%, #F4631F 70%, #FFB800 100%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 6s ease-in-out infinite;
+      text-shadow: none;
+    }
+    .logo-sub {
+      background: linear-gradient(90deg, #F4631F 0%, #FFB800 50%, #F4631F 100%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 4s ease-in-out infinite;
+      text-shadow: none;
     }
     .anim-up   { animation: fadeUp .45s cubic-bezier(.22,1,.36,1) both; }
     .anim-up-1 { animation-delay:  60ms; }
@@ -1004,11 +1022,11 @@ function App() {
             <div style={{display:'flex', alignItems:'center', gap:16}}>
               <Basketball size={44} spin={true} glow={true} />
               <div>
-                <div className="anton" style={{fontSize:22, color:'var(--cream)', lineHeight:1.1, letterSpacing:'0.04em'}}>
+                <div className="anton logo-title" style={{fontSize:26, lineHeight:1.05, letterSpacing:'0.03em'}}>
                   MARCH MADNESS
                 </div>
-                <div className="mono" style={{fontSize:11, color:'var(--accent)', letterSpacing:'0.12em', marginTop:1}}>
-                  KNOCKOUT POOL — 2025
+                <div className="anton logo-sub" style={{fontSize:14, letterSpacing:'0.18em', marginTop:2}}>
+                  KNOCKOUT POOL — 2026
                 </div>
               </div>
             </div>

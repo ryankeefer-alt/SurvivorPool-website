@@ -531,13 +531,28 @@ function App() {
 
   useEffect(() => { fetchState(); }, [fetchState]);
 
-  // ── Compute winners from games data ──
+  // ── Compute winners and losers from games data ──
   const WINNERS_BY_DAY = useMemo(() => {
     const w = {};
     Object.entries(gamesData).forEach(([day, games]) => {
       w[day] = new Set(games.filter(g => g.final && g.winner).map(g => g.winner));
     });
     return w;
+  }, [gamesData]);
+
+  const LOSERS_BY_DAY = useMemo(() => {
+    const l = {};
+    Object.entries(gamesData).forEach(([day, games]) => {
+      const losers = new Set();
+      games.forEach(g => {
+        if (g.final && g.winner) {
+          const loser = g.winner === g.home ? g.away : g.home;
+          losers.add(loser);
+        }
+      });
+      l[day] = losers;
+    });
+    return l;
   }, [gamesData]);
 
   const entriesClosed = closedDays.has(pickDay);
@@ -1000,8 +1015,10 @@ function App() {
 
   const getPickBadgeClass = (team, day) => {
     const winners = WINNERS_BY_DAY[day];
-    if (!winners || winners.size === 0) return 'badge-pending';
-    return winners.has(team) ? 'badge-win' : 'badge-loss';
+    if (winners && winners.has(team)) return 'badge-win';
+    const losers = LOSERS_BY_DAY[day];
+    if (losers && losers.has(team)) return 'badge-loss';
+    return 'badge-pending';
   };
 
   // ── Submit Picks State ──

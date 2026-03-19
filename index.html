@@ -509,6 +509,7 @@ function App() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPin, setAdminPin] = useState('');
   const [adminErr, setAdminErr] = useState('');
+  const [adminGameDay, setAdminGameDay] = useState(null); // which day's games to show in admin
 
   // ── Load data from API on mount ──
   const fetchState = useCallback(() => {
@@ -667,14 +668,23 @@ function App() {
   };
 
   // ── Admin game editing state ──
+  // adminGameDay controls which day's games are shown in admin (defaults to submissionDay)
+  const effectiveAdminDay = adminGameDay || submissionDay;
   const [editingGames, setEditingGames] = useState(null); // local copy of games for editing
   const [editingPickDayGames, setEditingPickDayGames] = useState(null); // games for pickDay when different
 
+  // Reset adminGameDay when submissionDay changes
   useEffect(() => {
-    if (isAdmin && gamesData[submissionDay]) {
-      setEditingGames(JSON.parse(JSON.stringify(gamesData[submissionDay])));
+    setAdminGameDay(null);
+  }, [submissionDay]);
+
+  useEffect(() => {
+    if (isAdmin && gamesData[effectiveAdminDay]) {
+      setEditingGames(JSON.parse(JSON.stringify(gamesData[effectiveAdminDay])));
+    } else if (isAdmin) {
+      setEditingGames(null);
     }
-  }, [isAdmin, submissionDay, gamesData]);
+  }, [isAdmin, effectiveAdminDay, gamesData]);
 
   useEffect(() => {
     if (isAdmin && pickDay !== submissionDay && gamesData[pickDay]) {
@@ -701,7 +711,7 @@ function App() {
       fetch('/api/admin/games', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ day: submissionDay, games: updated, pin: '___admin___' })
+        body: JSON.stringify({ day: effectiveAdminDay, games: updated, pin: '___admin___' })
       })
       .then(r => r.json())
       .then(data => {
@@ -722,7 +732,7 @@ function App() {
       fetch('/api/admin/games', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ day: submissionDay, games: updated, pin: '___admin___' })
+        body: JSON.stringify({ day: effectiveAdminDay, games: updated, pin: '___admin___' })
       })
       .then(r => r.json())
       .then(data => {
@@ -740,7 +750,7 @@ function App() {
     fetch('/api/admin/games', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ day: submissionDay, games: editingGames, pin: '___admin___' })
+      body: JSON.stringify({ day: effectiveAdminDay, games: editingGames, pin: '___admin___' })
     })
     .then(r => r.json())
     .then(data => {
@@ -962,12 +972,23 @@ function App() {
     return false;
   }, [pickDay]);
 
-  // ── Pick distribution for bar chart (only computed when entries are closed) ──
+  // ── Pick distribution for bar chart ──
+  // Shows current day when its entries are locked, otherwise shows the most recent locked day
+  const chartDay = useMemo(() => {
+    if (entriesClosed) return submissionDay;
+    // Find the most recent previous day that is locked
+    const currentIdx = DAY_ORDER.indexOf(submissionDay);
+    for (let i = currentIdx - 1; i >= 0; i--) {
+      if (closedDays.has(DAY_ORDER[i])) return DAY_ORDER[i];
+    }
+    return null; // no locked day to show
+  }, [submissionDay, entriesClosed, closedDays]);
+
   const pickDistribution = useMemo(() => {
-    if (!closedDays.has(submissionDay) || players.length === 0) return [];
+    if (!chartDay || players.length === 0) return [];
     const counts = {};
     players.forEach(p => {
-      const dayPicks = p.picks[submissionDay] || [];
+      const dayPicks = p.picks[chartDay] || [];
       dayPicks.forEach(team => {
         counts[team] = (counts[team] || 0) + 1;
       });
@@ -975,7 +996,7 @@ function App() {
     return Object.entries(counts)
       .map(([team, count]) => ({ team, count }))
       .sort((a, b) => b.count - a.count || a.team.localeCompare(b.team));
-  }, [players, submissionDay, entriesClosed]);
+  }, [players, chartDay]);
 
   const getPickBadgeClass = (team, day) => {
     const winners = WINNERS_BY_DAY[day];
@@ -1418,15 +1439,15 @@ function App() {
                       <div className="card-title" style={{color:'var(--gold)'}}>
                         <span style={{marginRight:8}}>📊</span>Pick Distribution
                       </div>
-                      <span className="badge badge-pending" style={{fontSize:10}}>{DAY_LABELS[submissionDay]}</span>
+                      <span className="badge badge-pending" style={{fontSize:10}}>{DAY_LABELS[chartDay]}</span>
                     </div>
                     <div style={{padding:'18px 22px'}}>
                       <div style={{fontSize:12, color:'var(--muted)', marginBottom:16, letterSpacing:'0.03em'}}>
-                        How many entries picked each team for {DAY_FULL[submissionDay] || submissionDay}
+                        How many entries picked each team for {DAY_FULL[chartDay] || chartDay}
                       </div>
                       {(() => {
                         const maxCount = Math.max(...pickDistribution.map(d => d.count));
-                        const winners = WINNERS_BY_DAY[submissionDay] || new Set();
+                        const winners = WINNERS_BY_DAY[chartDay] || new Set();
                         return pickDistribution.map((d, i) => {
                           const pct = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
                           const isWinner = winners.has(d.team);
@@ -1484,7 +1505,7 @@ function App() {
                         <div style={{fontSize:11, color:'var(--muted)', letterSpacing:'0.04em'}}>
                           {players.length} total {players.length === 1 ? 'entry' : 'entries'} · {pickDistribution.length} teams picked
                         </div>
-                        {WINNERS_BY_DAY[submissionDay] && WINNERS_BY_DAY[submissionDay].size > 0 && (
+                        {WINNERS_BY_DAY[chartDay] && WINNERS_BY_DAY[chartDay].size > 0 && (
                           <div style={{display:'flex', alignItems:'center', gap:8}}>
                             <span style={{width:10, height:10, borderRadius:2, background:'rgba(74,222,128,.7)', display:'inline-block'}} />
                             <span style={{fontSize:10, color:'var(--muted)', letterSpacing:'0.04em'}}>WON</span>
@@ -1860,10 +1881,23 @@ function App() {
             </div>
 
             {/* Game Results Editor */}
-            {editingGames && editingGames.length > 0 && (
-              <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
-                <div className="card-header">
-                  <div className="card-title">GAME RESULTS — {DAY_LABELS[submissionDay]}</div>
+            <div className="card anim-up anim-up-2" style={{marginBottom:20}}>
+              <div className="card-header" style={{flexWrap:'wrap', gap:10}}>
+                <div className="card-title">GAME RESULTS</div>
+                <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
+                  {DAY_ORDER.filter(d => gamesData[d] && gamesData[d].length > 0).map(d => (
+                    <button key={d}
+                      className={`badge ${d === effectiveAdminDay ? 'badge-pending' : 'badge-buyback'}`}
+                      style={{cursor:'pointer', padding:'5px 10px', fontSize:10, border: d === effectiveAdminDay ? '1px solid var(--accent)' : '1px solid var(--border)'}}
+                      onClick={() => setAdminGameDay(d)}>
+                      {DAY_LABELS[d]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            {editingGames && editingGames.length > 0 ? (
+              <React.Fragment>
+                <div style={{padding:'10px 22px 0', display:'flex', justifyContent:'flex-end'}}>
                   <button className="btn btn-primary" style={{padding:'6px 16px', fontSize:12}} onClick={handleSaveGames}>
                     Save &amp; Process Results
                   </button>
@@ -1943,8 +1977,13 @@ function App() {
                     Save &amp; Process Results
                   </button>
                 </div>
+              </React.Fragment>
+            ) : (
+              <div style={{padding:30, textAlign:'center', color:'var(--muted)', fontSize:14}}>
+                No games found for {DAY_LABELS[effectiveAdminDay] || effectiveAdminDay}.
               </div>
             )}
+            </div>
 
             {/* Pick Day Game Results Editor (shown when pickDay differs from submissionDay) */}
             {editingPickDayGames && editingPickDayGames.length > 0 && pickDay !== submissionDay && (
@@ -2054,8 +2093,8 @@ function App() {
                       </div>
                       <div style={{display:'flex', alignItems:'center', gap:10}}>
                         <span style={{fontSize:12, color:'var(--muted)'}}>{picksCount} picks</span>
-                        <span className={`badge ${isLocked ? 'badge-out' : isPast ? 'badge-buyback' : 'badge-alive'}`} style={{fontSize:9}}>
-                          {isLocked ? 'LOCKED' : isPast ? 'PAST' : 'OPEN'}
+                        <span className={`badge ${isLocked ? 'badge-out' : isPast ? 'badge-buyback' : isCurrent ? 'badge-alive' : 'badge-buyback'}`} style={{fontSize:9}}>
+                          {isLocked ? 'LOCKED' : isPast ? 'DONE' : isCurrent ? 'OPEN' : 'UPCOMING'}
                         </span>
                       </div>
                     </div>

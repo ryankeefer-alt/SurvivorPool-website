@@ -407,12 +407,27 @@ app.post('/api/admin/lock', function(req, res) {
         config.pickDay = DAY_ORDER[pickIdx + 1];
       }
     }
+    // Auto-advance currentDay so standings show the latest locked day
+    var lockedDayIdx = DAY_ORDER.indexOf(day);
+    var currentDayIdx = DAY_ORDER.indexOf(config.currentDay);
+    if (lockedDayIdx > currentDayIdx) {
+      config.currentDay = day;
+    }
   } else if (action === 'unlock') {
     config.closedDays = config.closedDays.filter(function(d) { return d !== day; });
+    // If unlocking the current day, revert currentDay to the latest remaining closed day
+    if (day === config.currentDay && config.closedDays.length > 0) {
+      var latestIdx = -1;
+      config.closedDays.forEach(function(d) {
+        var idx = DAY_ORDER.indexOf(d);
+        if (idx > latestIdx) latestIdx = idx;
+      });
+      config.currentDay = DAY_ORDER[latestIdx];
+    }
   }
 
   writeJSON(CONFIG_PATH, config);
-  res.json({ ok: true, closedDays: config.closedDays, pickDay: config.pickDay });
+  res.json({ ok: true, closedDays: config.closedDays, pickDay: config.pickDay, currentDay: config.currentDay });
 });
 
 /* ── POST /api/admin/advance-day ── move to next day */

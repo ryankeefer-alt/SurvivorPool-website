@@ -167,9 +167,16 @@ app.get('/api/state', function(req, res) {
     }
   });
 
+  // Strip email addresses from public response — emails only available via admin export
+  var safePlayers = players.map(function(p) {
+    var sp = Object.assign({}, p);
+    delete sp.email;
+    return sp;
+  });
+
   res.json({
     config: safeConfig,
-    players: players,
+    players: safePlayers,
     games: games,
     teams: teams,
     picksPerDay: PICKS_PER_DAY,
@@ -389,8 +396,8 @@ app.post('/api/admin/lock', function(req, res) {
     return res.json({ ok: true });
   }
 
-  // Lock action: allow if PIN matches or if already authenticated (___admin___)
-  if (action === 'lock' && pin !== config.adminPin && pin !== '___admin___') {
+  // All lock/unlock actions require valid PIN
+  if (pin !== config.adminPin) {
     return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 
@@ -418,6 +425,10 @@ app.post('/api/admin/lock', function(req, res) {
 /* ── POST /api/admin/advance-day ── move to next day */
 app.post('/api/admin/advance-day', function(req, res) {
   var config = readJSON(CONFIG_PATH);
+  var pin = req.body.pin;
+  if (pin !== config.adminPin) {
+    return res.status(401).json({ error: 'Incorrect PIN.' });
+  }
   var currentIdx = DAY_ORDER.indexOf(config.currentDay);
 
   if (currentIdx < DAY_ORDER.length - 1) {
@@ -439,7 +450,7 @@ app.post('/api/admin/games', function(req, res) {
   var config = readJSON(CONFIG_PATH);
   var pin = req.body.pin;
 
-  if (pin !== config.adminPin && pin !== '___admin___') {
+  if (pin !== config.adminPin) {
     return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 
@@ -579,7 +590,7 @@ app.post('/api/admin/edit-picks', function(req, res) {
   var config = readJSON(CONFIG_PATH);
   var pin = req.body.pin;
 
-  if (pin !== config.adminPin && pin !== '___admin___') {
+  if (pin !== config.adminPin) {
     return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 
@@ -641,7 +652,7 @@ app.post('/api/admin/delete-player', function(req, res) {
   var config = readJSON(CONFIG_PATH);
   var pin = req.body.pin;
 
-  if (pin !== config.adminPin && pin !== '___admin___') {
+  if (pin !== config.adminPin) {
     return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 
@@ -667,7 +678,7 @@ app.post('/api/admin/import', function(req, res) {
   var config = readJSON(CONFIG_PATH);
   var pin = req.body.pin;
 
-  if (pin !== config.adminPin && pin !== '___admin___') {
+  if (pin !== config.adminPin) {
     return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 
@@ -705,7 +716,7 @@ app.post('/api/admin/reset', function(req, res) {
   var config = readJSON(CONFIG_PATH);
   var pin = req.body.pin;
 
-  if (pin !== config.adminPin && pin !== '___admin___') {
+  if (pin !== config.adminPin) {
     return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 
@@ -744,7 +755,7 @@ app.post('/api/admin/export', function(req, res) {
   var config = readJSON(CONFIG_PATH);
   var pin = req.body.pin;
 
-  if (pin !== config.adminPin && pin !== '___admin___') {
+  if (pin !== config.adminPin) {
     return res.status(401).json({ error: 'Incorrect PIN.' });
   }
 

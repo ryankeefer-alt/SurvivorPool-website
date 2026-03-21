@@ -508,6 +508,7 @@ function App() {
   const [isAdmin, setIsAdmin]       = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPin, setAdminPin] = useState('');
+  const [storedPin, setStoredPin] = useState('');
   const [adminErr, setAdminErr] = useState('');
   const [adminGameDay, setAdminGameDay] = useState(null); // which day's games to show in admin
 
@@ -569,6 +570,7 @@ function App() {
       if (data.error) {
         setAdminErr(data.error);
       } else {
+        setStoredPin(adminPin);
         setIsAdmin(true);
         setShowAdminLogin(false);
         setAdminPin('');
@@ -581,6 +583,7 @@ function App() {
 
   const handleAdminLogout = () => {
     setIsAdmin(false);
+    setStoredPin('');
     setActiveTab('standings');
   };
 
@@ -589,7 +592,7 @@ function App() {
     fetch('/api/admin/lock', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ day, action: 'lock', pin: '___admin___' })
+      body: JSON.stringify({ day, action: 'lock', pin: storedPin })
     })
     .then(r => r.json())
     .then(data => {
@@ -620,7 +623,7 @@ function App() {
     fetch('/api/admin/delete-player', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ playerId, pin: '___admin___' })
+      body: JSON.stringify({ playerId, pin: storedPin })
     })
     .then(r => r.json())
     .then(data => {
@@ -654,7 +657,7 @@ function App() {
     fetch('/api/admin/reset', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ pin: '___admin___' })
+      body: JSON.stringify({ pin: storedPin })
     }).then(r => r.json()).then(d => {
       if (d.ok) {
         window.location.reload();
@@ -668,7 +671,7 @@ function App() {
     fetch('/api/admin/advance-day', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({})
+      body: JSON.stringify({ pin: storedPin })
     })
     .then(r => r.json())
     .then(data => {
@@ -726,7 +729,7 @@ function App() {
       fetch('/api/admin/games', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ day: effectiveAdminDay, games: updated, pin: '___admin___' })
+        body: JSON.stringify({ day: effectiveAdminDay, games: updated, pin: storedPin })
       })
       .then(r => r.json())
       .then(data => {
@@ -747,7 +750,7 @@ function App() {
       fetch('/api/admin/games', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ day: effectiveAdminDay, games: updated, pin: '___admin___' })
+        body: JSON.stringify({ day: effectiveAdminDay, games: updated, pin: storedPin })
       })
       .then(r => r.json())
       .then(data => {
@@ -765,7 +768,7 @@ function App() {
     fetch('/api/admin/games', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ day: effectiveAdminDay, games: editingGames, pin: '___admin___' })
+      body: JSON.stringify({ day: effectiveAdminDay, games: editingGames, pin: storedPin })
     })
     .then(r => r.json())
     .then(data => {
@@ -794,7 +797,7 @@ function App() {
       fetch('/api/admin/games', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ day: pickDay, games: updated, pin: '___admin___' })
+        body: JSON.stringify({ day: pickDay, games: updated, pin: storedPin })
       })
       .then(r => r.json())
       .then(data => { if (data.ok) fetchState(); });
@@ -808,7 +811,7 @@ function App() {
       fetch('/api/admin/games', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ day: pickDay, games: updated, pin: '___admin___' })
+        body: JSON.stringify({ day: pickDay, games: updated, pin: storedPin })
       })
       .then(r => r.json())
       .then(data => { if (data.ok) fetchState(); });
@@ -820,7 +823,7 @@ function App() {
     fetch('/api/admin/games', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ day: pickDay, games: editingPickDayGames, pin: '___admin___' })
+      body: JSON.stringify({ day: pickDay, games: editingPickDayGames, pin: storedPin })
     })
     .then(r => r.json())
     .then(data => {
@@ -857,7 +860,7 @@ function App() {
     fetch('/api/admin/edit-picks', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ pin: '___admin___', playerId: editingPlayerId, day: editingDay, picks: editingPicks })
+      body: JSON.stringify({ pin: storedPin, playerId: editingPlayerId, day: editingDay, picks: editingPicks })
     })
     .then(r => r.json())
     .then(data => {
@@ -880,7 +883,7 @@ function App() {
     fetch('/api/admin/export', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ pin: '___admin___' })
+      body: JSON.stringify({ pin: storedPin })
     })
     .then(r => r.json())
     .then(data => {
@@ -898,7 +901,7 @@ function App() {
     fetch('/api/admin/import', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ pin: '___admin___', players: parsed.players, games: parsed.games, config: parsed.config })
+      body: JSON.stringify({ pin: storedPin, players: parsed.players, games: parsed.games, config: parsed.config })
     })
     .then(r => r.json())
     .then(data => {

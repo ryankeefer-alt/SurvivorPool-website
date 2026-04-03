@@ -936,16 +936,17 @@ function App() {
     if (alivePlayers.length === 1 && eliminatedPlayers.length > 0) {
       return { finished: true, winners: [alivePlayers[0].name], reason: 'Last player standing!' };
     }
+    // Don't check forced-pick scenarios while picks are still open — wait until all picks are locked
+    if (!closedDays.has(pickDay)) return null;
     // Only check if current day has teams (games imported)
-    const nextTeams = teamsData[pickDay] || [];
+    const nextDayIdx = DAY_ORDER.indexOf(pickDay) + 1;
+    const nextDay = nextDayIdx < DAY_ORDER.length ? DAY_ORDER[nextDayIdx] : null;
+    if (!nextDay) return null; // last day of tournament, winner decided by elimination only
+    const nextTeams = teamsData[nextDay] || [];
     if (nextTeams.length === 0) return null;
-    // Only check players who haven't submitted picks for the current day yet
-    const needPicks = alivePlayers.filter(p => !p.picks[pickDay]);
-    // If everyone already submitted picks, no check needed yet
-    if (needPicks.length === 0) return null;
-
-    const picksPerDay = PICKS_PER_DAY[pickDay] || 1;
-    const playerAvailable = needPicks.map(p => {
+    // Check ALL alive players for the next day
+    const picksPerDay = PICKS_PER_DAY[nextDay] || 1;
+    const playerAvailable = alivePlayers.map(p => {
       const used = [];
       Object.values(p.picks || {}).forEach(dayPicks => {
         dayPicks.forEach(t => { if (t !== 'None' && used.indexOf(t) === -1) used.push(t); });
@@ -955,7 +956,7 @@ function App() {
 
     const allEmpty = playerAvailable.every(teams => teams.length === 0);
     if (allEmpty) {
-      return { finished: true, winners: needPicks.map(p => p.name), reason: 'No teams left for any remaining player.' };
+      return { finished: true, winners: alivePlayers.map(p => p.name), reason: 'No teams left for any remaining player.' };
     }
 
     // Check if all players are forced into the exact same pick(s)
@@ -965,12 +966,12 @@ function App() {
       const firstPicks = playerAvailable[0].join(',');
       const allSame = playerAvailable.every(teams => teams.join(',') === firstPicks);
       if (allSame) {
-        return { finished: true, winners: needPicks.map(p => p.name), reason: `All remaining players must pick ${playerAvailable[0].join(' & ')}. Same outcome for everyone.` };
+        return { finished: true, winners: alivePlayers.map(p => p.name), reason: `All remaining players must pick ${playerAvailable[0].join(' & ')}. Same outcome for everyone.` };
       }
     }
 
     return null;
-  }, [alivePlayers, eliminatedPlayers, teamsData, pickDay]);
+  }, [alivePlayers, eliminatedPlayers, teamsData, pickDay, closedDays]);
 
   // Check if an eliminated player can buy back (only the round immediately after their loss)
   const canBuyback = useCallback((player) => {

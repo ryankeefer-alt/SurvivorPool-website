@@ -944,7 +944,22 @@ function App() {
     // Only check if current day has teams (games imported)
     const nextDayIdx = DAY_ORDER.indexOf(pickDay) + 1;
     const nextDay = nextDayIdx < DAY_ORDER.length ? DAY_ORDER[nextDayIdx] : null;
-    if (!nextDay) return null; // last day of tournament, winner decided by elimination only
+    // Last day of tournament — check if all alive players have no teams left (co-champs)
+    if (!nextDay) {
+      const currentTeams = teamsData[pickDay] || [];
+      if (currentTeams.length === 0) return null;
+      const allNoTeams = alivePlayers.every(p => {
+        const used = [];
+        Object.values(p.picks || {}).forEach(dayPicks => {
+          dayPicks.forEach(t => { if (t !== 'None' && used.indexOf(t) === -1) used.push(t); });
+        });
+        return currentTeams.filter(t => used.indexOf(t) === -1).length === 0;
+      });
+      if (allNoTeams) {
+        return { finished: true, winners: alivePlayers.map(p => p.name), reason: 'No teams left for any remaining player.' };
+      }
+      return null;
+    }
     const nextTeams = teamsData[nextDay] || [];
     if (nextTeams.length === 0) return null;
     // Check ALL alive players for the next day
